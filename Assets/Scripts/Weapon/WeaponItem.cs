@@ -27,7 +27,6 @@ public class WeaponItem : Equipment
     public int maxStaminaModifier = 0;
     public int moveSpeedModifier = 0;
 
-    // Kept for compatibility with existing character stat scripts.
     public enum WeaponType { Sword, Dagger, Staff }
     public WeaponType weaponType = WeaponType.Sword;
     [HideInInspector] public float attackRadiusOverride = 0f;
