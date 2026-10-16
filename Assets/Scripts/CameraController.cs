@@ -6,9 +6,11 @@ public class CameraController : MonoBehaviour
 {
     [Header("Camera Movement")]
     public Transform target;
+    public Transform lockOnTarget;
 
     // Offset from player to camera pivot.
-    public Vector3 offset = new Vector3(0f, 1.6f, 0f);
+    public Vector3 offset = new Vector3(0f, 2.5f, 0f);
+    public Vector3 lockOffset = new Vector3(0f, 4f, 0f);
 
     [SerializeField] float cameraDistance = 4f;
     public float mouseSensitivity = 3f;
@@ -86,8 +88,10 @@ public class CameraController : MonoBehaviour
             return;
         }
 
-        if (Cursor.lockState == CursorLockMode.Locked)
+        if (Cursor.lockState == CursorLockMode.Locked && lockOnTarget == null)
+        {
             HandleMouseInput();
+        }
     }
 
     void LateUpdate()
@@ -96,6 +100,19 @@ public class CameraController : MonoBehaviour
         {
             RestoreAllMaterials();
             return;
+        }
+        if (lockOnTarget != null)
+        {
+            Vector3 direction = lockOnTarget.position + Vector3.up - (target.position + lockOffset);
+
+            float horizontalDistance = new Vector2(direction.x, direction.z).magnitude;
+
+            if (horizontalDistance > 0.01f)
+            {
+                targetYaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+
+                targetPitch = Mathf.Clamp(Mathf.Atan2(-direction.y, horizontalDistance) * Mathf.Rad2Deg, minPitch, maxPitch);
+            }
         }
 
         float dt = Time.deltaTime;

@@ -39,9 +39,7 @@ public class DamageNumberEmitter : MonoBehaviour
     }
 
 
-    void OnDamageTaken(
-        int damageAmount,
-        DamageType damageType)
+    void OnDamageTaken(int damageAmount, DamageType damageType)
     {
         if (!showDamageNumbers)
             return;
@@ -51,6 +49,8 @@ public class DamageNumberEmitter : MonoBehaviour
 
         Vector3 spawnPosition = damageNumberAnchor != null ? damageNumberAnchor.position : transform.position + fallbackOffset;
 
-        DamageNumberManager.instance.ShowDamage(damageAmount, damageType, spawnPosition);
+        if (this.gameObject.tag != "Player")
+            DamageNumberManager.instance.ShowDamage(damageAmount, damageType, spawnPosition);
+
     }
 }

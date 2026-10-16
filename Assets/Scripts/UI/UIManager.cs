@@ -169,7 +169,7 @@ public class UIManager : MonoBehaviour
 
     void Update()
     {
-        UpdateCooldownDisplay(basicAttack, playerCombat.AttackCooldownRemaining, playerCombat.AttackCooldownDuration);
+        //UpdateCooldownDisplay(basicAttack, playerCombat.AttackCooldownRemaining, playerCombat.AttackCooldownDuration);
 
         UpdateCooldownDisplay(dash, playerController.DashCooldownRemaining, playerController.DashCooldownDuration);
 

@@ -7,7 +7,7 @@ using UnityEngine;
     controls the interaction UI and performs the interaction
     when requested by PlayerController.
 */
-public class PlayerInteractor : MonoBehaviour
+public class PlayerInteract : MonoBehaviour
 {
     [Header("Interaction")]
     [SerializeField] LayerMask interactionMask;

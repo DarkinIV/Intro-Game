@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterName: Swordman
   portrait: {fileID: 21300000, guid: 53a51e6c493114b819ff21f349149692, type: 3}
-  animatorController: {fileID: 9100000, guid: 05262799862be4dd08c84d67ded6276f, type: 2}
+  animatorController: {fileID: 9100000, guid: 3a7230805956578409007b9011c2029b, type: 2}
   playerPrefab: {fileID: 1378388896379010, guid: f09e62e1df5116d4498704cea89566d3, type: 3}
   Vitality: 4
   Energy: 1

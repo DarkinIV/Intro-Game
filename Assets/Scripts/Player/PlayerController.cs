@@ -17,11 +17,16 @@ public class PlayerController : MonoBehaviour
     [Range(0, 1)][SerializeField] float iframeStartPercent = 0.0f; // When i-frames begin (0 = start)
     [Range(0, 1)][SerializeField] float iframeEndPercent = 0.8f;   // When i-frames end (1 = end)
 
+    [Header("Combat")]
+    [SerializeField] float lockOnRange = 12f;
+    Transform lockedTarget;
+
     CharacterController controller;
     PlayerStats stats;
     PlayerCombat combat;
-    PlayerInteractor interactor;
+    PlayerInteract interactor;
     Camera cam;
+    CameraController cameraController;
 
     float verticalVelocity;
     float nextDashTime;
@@ -38,8 +43,9 @@ public class PlayerController : MonoBehaviour
         controller = GetComponent<CharacterController>();
         stats = GetComponent<PlayerStats>();
         combat = GetComponent<PlayerCombat>();
-        interactor = GetComponent<PlayerInteractor>();
+        interactor = GetComponent<PlayerInteract>();
         cam = Camera.main;
+        cameraController = cam.GetComponent<CameraController>();
     }
 
     void Update()
@@ -49,6 +55,15 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Space))
             Dash();
+
+        if (Input.GetKeyDown(KeyCode.Q))
+            ToggleLockOn();
+        if (lockedTarget != null && (lockedTarget.GetComponentInParent<CharacterStats>().IsDead || Vector3.Distance(transform.position, lockedTarget.position) > lockOnRange))
+        {
+            lockedTarget = null;
+        }
+        if (cameraController != null)
+            cameraController.lockOnTarget = lockedTarget;
 
         if (Input.GetMouseButtonDown(0) && !IsDashing)
             combat.TryAttack();
@@ -103,11 +118,25 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // Face movement direction
-        if (moveDirection.magnitude > 0.1f)
+        // Face locked enemy unless sprinting
+        if (lockedTarget != null && !isSprinting)
+        {
+            Vector3 direction = lockedTarget.position - transform.position;
+            direction.y = 0f;
+
+            if (direction.sqrMagnitude > 0.001f)
+            {
+                Quaternion rotation = Quaternion.LookRotation(direction);
+
+                transform.rotation = Quaternion.Slerp(transform.rotation, rotation, stats.turnSpeed.Value * Time.deltaTime);
+            }
+        }
+        else if (moveDirection.magnitude > 0.1f)
         {
             lastMoveDirection = moveDirection;
+
             Quaternion rotation = Quaternion.LookRotation(moveDirection);
+
             transform.rotation = Quaternion.Slerp(transform.rotation, rotation, stats.turnSpeed.Value * Time.deltaTime);
         }
 
@@ -168,5 +197,37 @@ public class PlayerController : MonoBehaviour
 
         IsInvulnerable = false;
         IsDashing = false;
+    }
+
+    void ToggleLockOn()
+    {
+        if (lockedTarget != null)
+        {
+            lockedTarget = null;
+            return;
+        }
+
+        float bestDistance = Mathf.Infinity;
+
+        foreach (EnemyCombat enemy in FindObjectsByType<EnemyCombat>(FindObjectsSortMode.None))
+        {
+            if (enemy.GetComponent<CharacterStats>().IsDead)
+                continue;
+
+            Vector3 screenPos = cam.WorldToViewportPoint(enemy.transform.position + Vector3.up);
+
+            // Enemy must be in front of the camera
+            if (screenPos.z <= 0)
+                continue;
+
+            // Distance from centre of screen
+            float distance = Vector2.Distance(new Vector2(screenPos.x, screenPos.y), new Vector2(0.5f, 0.5f));
+
+            if (distance < bestDistance && Vector3.Distance(transform.position, enemy.transform.position) <= lockOnRange)
+            {
+                bestDistance = distance;
+                lockedTarget = enemy.lockOnTransform;
+            }
+        }
     }
 }

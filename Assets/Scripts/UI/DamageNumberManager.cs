@@ -17,6 +17,8 @@ public class DamageNumberManager : MonoBehaviour
 
     [SerializeField] Color magicColour;
 
+    [SerializeField] Color playerDamageColour;
+
     [Header("Damage Size")]
     [SerializeField] int damageForMaximumSize = 100;
     [SerializeField] float minimumScale = 0.85f;
@@ -42,10 +44,7 @@ public class DamageNumberManager : MonoBehaviour
     }
 
 
-    public void ShowDamage(
-        int damageAmount,
-        DamageType damageType,
-        Vector3 worldPosition)
+    public void ShowDamage(int damageAmount, DamageType damageType, Vector3 worldPosition)
     {
         if (damageAmount <= 0 || damageNumberPrefab == null)
             return;
