@@ -50,7 +50,7 @@ public class EnemyRewards : MonoBehaviour
             playerStats = Player.instance.playerStats;
 
         if (playerStats == null)
-            playerStats = FindObjectOfType<PlayerStats>();
+            playerStats = FindFirstObjectByType<PlayerStats>();
 
         if (playerStats == null)
             return;

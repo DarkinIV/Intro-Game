@@ -14,8 +14,7 @@ public class DamageNumber : MonoBehaviour
     [Header("Text")]
     [SerializeField] TMP_Text damageText;
     [SerializeField] float outlineWidth = 0.16f;
-    [SerializeField] Color outlineColour =
-        new Color(0f, 0f, 0f, 0.85f);
+    [SerializeField] Color outlineColour = new Color(0f, 0f, 0f, 0.85f);
 
     [Header("Lifetime")]
     [SerializeField] float lifetime = 0.85f;
@@ -40,11 +39,7 @@ public class DamageNumber : MonoBehaviour
     Color baseColour;
 
 
-    public void Initialise(
-        int damageAmount,
-        Color colour,
-        float scale,
-        Camera targetCamera)
+    public void Initialise(int damageAmount, Color colour, float scale, Camera targetCamera)
     {
         cam = targetCamera;
         damageScale = Mathf.Max(0.01f, scale);

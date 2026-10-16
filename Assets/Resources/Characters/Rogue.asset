@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterName: Rogue
   portrait: {fileID: 0}
-  animatorController: {fileID: 9100000, guid: 05262799862be4dd08c84d67ded6276f, type: 2}
+  animatorController: {fileID: 9100000, guid: 3a7230805956578409007b9011c2029b, type: 2}
   playerPrefab: {fileID: 1378388896379010, guid: 4a5e8315f342741d1963b87f80a4a332, type: 3}
   Vitality: 2
   Energy: 3

@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ad5692ced4b7064fa63bb5a0d209f19, type: 3}
+  m_Name: Cube Sword
+  m_EditorClassIdentifier: 
+  name: Cube Sword
+  icon: {fileID: 0}
+  description: Cube Sword
+  category: 0
+  showInInventory: 1
+  isStackable: 0
+  maxStack: 1
+  equipSlot: 0
+  damageModifier: 0
+  weaponPrefab: {fileID: 3969241039888509039, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+  attackKind: 0
+  comboLength: 3
+  attackStaminaCost: 17
+  attackRateModifier: 2
+  bonusDamage: 0
+  projectilePrefab: {fileID: 0}
+  projectileMode: 0
+  projectileSpeed: 15
+  projectileLifetime: 5
+  projectileTurnSpeed: 360
+  maxStaminaModifier: 0
+  moveSpeedModifier: 0
+  weaponType: 0
+  attackRadiusOverride: 0
