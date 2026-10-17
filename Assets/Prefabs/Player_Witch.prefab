@@ -667,6 +667,7 @@ GameObject:
   - component: {fileID: 6681088528997004813}
   - component: {fileID: -2537817300402564496}
   - component: {fileID: 1881558593130913331}
+  - component: {fileID: 9016773321862364738}
   m_Layer: 9
   m_Name: Player_Witch
   m_TagString: Player
@@ -914,6 +915,22 @@ MonoBehaviour:
   startingWeapon: {fileID: 0}
   weaponDropSpawnPoint: {fileID: 0}
   weaponPickupPrefab: {fileID: 0}
+--- !u!114 &9016773321862364738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378388896379010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6f6c3974e3c64a91845f5d77517c0da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orbPrefab: {fileID: 1884676605874892365, guid: d145278fe970e44f7a6cb2d422012860, type: 3}
+  spawnPoint: {fileID: 1990831323465866754}
+  speed: 20
+  fireRate: 2
 --- !u!1 &1440863775532712
 GameObject:
   m_ObjectHideFlags: 0
