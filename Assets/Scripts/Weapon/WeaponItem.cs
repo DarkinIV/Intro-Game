@@ -3,7 +3,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "New Weapon", menuName = "Inventory/Weapon")]
 public class WeaponItem : Equipment
 {
-    public enum AttackKind { Melee, Projectile }
+    public enum AttackKind { Melee, Ranged }
     public enum ProjectileMode { Straight, Homing }
 
     [Header("Visuals")]

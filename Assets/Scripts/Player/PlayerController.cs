@@ -56,7 +56,7 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space))
             Dash();
 
-        if (Input.GetKeyDown(KeyCode.Q))
+        if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.Mouse2))
             ToggleLockOn();
         if (lockedTarget != null && (lockedTarget.GetComponentInParent<CharacterStats>().IsDead || Vector3.Distance(transform.position, lockedTarget.position) > lockOnRange))
         {
@@ -64,6 +64,8 @@ public class PlayerController : MonoBehaviour
         }
         if (cameraController != null)
             cameraController.lockOnTarget = lockedTarget;
+
+        combat.Target = lockedTarget;
 
         if (Input.GetMouseButtonDown(0) && !IsDashing)
             combat.TryAttack();

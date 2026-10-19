@@ -44,7 +44,6 @@ public class UIManager : MonoBehaviour
     [Header("Stamina Feedback")]
     [SerializeField] float staminaHoldTime = 0.2f;
     [SerializeField] float staminaDrainSpeed = 0.8f;
-    [SerializeField] float staminaFillDuration = 1f;
 
     [Header("Bar Size")]
     [SerializeField] float pixelsPerHealth = 2f;
@@ -86,13 +85,11 @@ public class UIManager : MonoBehaviour
 
     public PlayerStats playerStats;
     PlayerController playerController;
-    PlayerCombat playerCombat;
 
     Coroutine damageDrainRoutine;
     Coroutine healFillRoutine;
     Coroutine shakeRoutine;
     Coroutine staminaDamageDrainRoutine;
-    Coroutine staminaHealFillRoutine;
     Coroutine experienceRoutine;
     Coroutine goldRoutine;
     Coroutine goldPunchRoutine;
@@ -121,7 +118,6 @@ public class UIManager : MonoBehaviour
     {
         playerStats = Player.instance.playerStats;
         playerController = Player.instance.GetComponent<PlayerController>();
-        playerCombat = Player.instance.GetComponent<PlayerCombat>();
 
         playerStats.OnHealthChanged += UpdatePlayerHealth;
         playerStats.OnDamaged += OnPlayerDamaged;
@@ -259,8 +255,7 @@ public class UIManager : MonoBehaviour
 
         if (staminaDamageFill != null && staminaFill != null)
         {
-            float previousActualPercent =
-                playerStats != null && playerStats.maxStamina.Value > 0 ? Mathf.Clamp01(lastActualStamina / (float)playerStats.maxStamina.Value) : staminaFill.fillAmount;
+            float previousActualPercent = playerStats != null && playerStats.maxStamina.Value > 0 ? Mathf.Clamp01(lastActualStamina / (float)playerStats.maxStamina.Value) : staminaFill.fillAmount;
 
             staminaDamageFill.fillAmount = Mathf.Max(staminaDamageFill.fillAmount, previousActualPercent);
 
