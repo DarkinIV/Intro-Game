@@ -124,9 +124,22 @@ public class CharacterCombat : MonoBehaviour
     }
 
     // RANGED
-    // Needs 2 types, flying straight and homing missle
+    // Needs 2 types, flying straight and homing missile
     // FireProjectile can be called during animation using Animation Events
 
+    public void FireProjectile()
+    {
+        WeaponItem weapon = weapons.CurrentWeapon;
+        if (weapon == null)
+            return;
+        GameObject orb = Instantiate(weapon.projectilePrefab, weapons.Muzzle.position, weapons.Muzzle.rotation);
+        OrbController orbController = orb.GetComponent<OrbController>();
+        orbController.shooter = this;
+
+        Rigidbody orbBody = orb.GetComponent<Rigidbody>();
+        orbBody.velocity = transform.forward * weapon.projectileSpeed;
+        Destroy(orb, weapon.projectileLifetime);
+    }
     
 
     // CHARACTER-SPECIFIC COMBAT
