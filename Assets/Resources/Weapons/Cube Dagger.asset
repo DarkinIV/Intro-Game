@@ -34,5 +34,5 @@ MonoBehaviour:
   projectileTurnSpeed: 360
   maxStaminaModifier: 0
   moveSpeedModifier: 0
-  weaponType: 0
+  weaponType: 1
   attackRadiusOverride: 0

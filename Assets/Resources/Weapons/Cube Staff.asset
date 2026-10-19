@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ad5692ced4b7064fa63bb5a0d209f19, type: 3}
+  m_Name: Cube Staff
+  m_EditorClassIdentifier: 
+  name: Cube Staff
+  icon: {fileID: 0}
+  description: Cube Staff
+  category: 0
+  showInInventory: 1
+  isStackable: 0
+  maxStack: 1
+  equipSlot: 0
+  damageModifier: 0
+  weaponPrefab: {fileID: 1789005608495600381, guid: 1a98bf7d086c85d428144dd4531494f7, type: 3}
+  attackKind: 1
+  comboLength: 3
+  attackStaminaCost: 15
+  attackRateModifier: 2
+  bonusDamage: 2
+  projectilePrefab: {fileID: 7638945631581436254, guid: 02cca85988e8feb4c9d7ea00f03d1596, type: 3}
+  projectileMode: 1
+  projectileSpeed: 12
+  projectileLifetime: 15
+  projectileTurnSpeed: 360
+  maxStaminaModifier: 0
+  moveSpeedModifier: 0
+  weaponType: 2
+  attackRadiusOverride: 0

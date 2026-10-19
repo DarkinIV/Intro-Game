@@ -6,7 +6,7 @@ using UnityEngine;
 [RequireComponent(typeof(WeaponInventory))]
 public class CharacterCombat : MonoBehaviour
 {
-    [Header("Damage")]
+    [Header("Combat")]
     [SerializeField] protected int baseDamage = 10;
 
     protected CharacterStats stats;
@@ -17,7 +17,7 @@ public class CharacterCombat : MonoBehaviour
     bool canCombo;
     bool queued;
 
-    public Transform Target { get; set; }
+    public Transform Target;
 
     public bool IsAttacking => animator != null && (animator.GetCurrentAnimatorStateInfo(0).IsTag("Attack") || (animator.IsInTransition(0) && animator.GetNextAnimatorStateInfo(0).IsTag("Attack")));
 
@@ -111,7 +111,7 @@ public class CharacterCombat : MonoBehaviour
 
     public void OpenHitbox()
     {
-        if (weapons.Hitbox == null)
+        if (weapons.Hitbox == null || !ConsumeAttackCost())
             return;
 
         weapons.Hitbox.StartSwing();
@@ -124,14 +124,48 @@ public class CharacterCombat : MonoBehaviour
     }
 
     // RANGED
-    // Needs 2 types, flying straight and homing missle
-    // FireProjectile can be called during animation using Animation Events
+    public void FireProjectile()
+    {
+        if (weapons.CurrentWeapon == null)
+            return;
 
-    
+        WeaponItem weapon = weapons.CurrentWeapon;
+
+        if (weapon.attackKind != WeaponItem.AttackKind.Ranged || weapon.projectilePrefab == null)
+            return;
+        if (!ConsumeAttackCost())
+            return;
+        Transform muzzle = weapons.Muzzle != null ? weapons.Muzzle : transform;
+
+        Vector3 direction = GetAimDirection(muzzle.position);
+
+        if (direction.sqrMagnitude < 0.001f)
+            direction = transform.forward;
+
+        GameObject obj = Instantiate(weapon.projectilePrefab, muzzle.position, Quaternion.LookRotation(direction));
+
+        Projectile projectile = obj.GetComponent<Projectile>();
+
+        if (projectile == null)
+        {
+            Debug.LogWarning($"{weapon.name}: Projectile component missing.");
+
+            Destroy(obj);
+            return;
+        }
+
+        projectile.Launch(this, Target, weapon.projectileMode, direction, weapon.projectileSpeed, weapon.projectileLifetime, weapon.projectileTurnSpeed);
+    }
+
+    protected virtual Vector3 GetAimDirection(Vector3 origin)
+    {
+        return Target != null ? (Target.position + Vector3.up - origin).normalized : transform.forward;
+    }
 
     // CHARACTER-SPECIFIC COMBAT
 
     protected virtual bool CanAttack() => true;
+    protected virtual bool ConsumeAttackCost() => true;
 
     protected virtual int GetAttackDamage() => baseDamage;
 
@@ -160,12 +194,12 @@ public class CharacterCombat : MonoBehaviour
             return;
 
         int before = victim.currentHealth;
-
+        
         int bonus = weapons.CurrentWeapon != null ? weapons.CurrentWeapon.bonusDamage : 0;
-
-        victim.TakeDamage(Mathf.Max(0, GetAttackDamage() + bonus));
-
-        int dealt = Mathf.Max(0, before - victim.currentHealth);
+        
+        int dealt = GetAttackDamage() + bonus;
+        
+        victim.TakeDamage(dealt);
 
         OnSuccessfulHit(victim, dealt);
         OnHit?.Invoke(victim);

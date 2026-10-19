@@ -44,7 +44,7 @@ public class CharacterStats : MonoBehaviour
 
     public bool IsDead { get; private set; }
 
-    public float GetAttackSpeed() => attackRate * (1f + attackSpeedPct);
+    public virtual float GetAttackSpeed() => attackRate * (1f + attackSpeedPct);
     public float GetMoveSpeed() => (moveSpeedBase + moveSpeedFlat) * (1f + moveSpeedPct);
 
     public void AddPaceFlat(float amount)    => moveSpeedFlat += amount;
@@ -101,23 +101,17 @@ public class CharacterStats : MonoBehaviour
     }
 
 
-    public void TakeDamage(
-        int amount,
-        DamageType damageType = DamageType.Physical)
+    public void TakeDamage(int amount, DamageType damageType = DamageType.Physical)
     {
         if (IsDead || amount <= 0)
             return;
 
-        int oldHealth = currentHealth;
+        currentHealth = currentHealth - amount;
 
-        currentHealth = Mathf.Max(currentHealth - amount, 0);
-
-        int damageTaken = oldHealth - currentHealth;
-
-        if (damageTaken > 0)
+        if (amount > 0)
         {
-            OnDamaged?.Invoke(damageTaken);
-            OnDamageTaken?.Invoke(damageTaken, damageType);
+            OnDamaged?.Invoke(amount);
+            OnDamageTaken?.Invoke(amount, damageType);
         }
 
         OnHealthChanged?.Invoke(currentHealth, maxHealth.Value);
@@ -159,15 +153,10 @@ public class CharacterStats : MonoBehaviour
         {
             if (showDamageEffect)
             {
-                OnStaminaDamaged?.Invoke(
-                    Mathf.RoundToInt(staminaLost)
-                );
+                OnStaminaDamaged?.Invoke(Mathf.RoundToInt(staminaLost));
             }
 
-            OnStaminaChanged?.Invoke(
-                currentStamina,
-                maxStamina.Value
-            );
+            OnStaminaChanged?.Invoke(currentStamina, maxStamina.Value);
         }
 
         if (currentStamina <= 0)

@@ -5,7 +5,6 @@ public class PlayerStats : CharacterStats
     [Header("Health Potions")]
     [SerializeField] int maxHealthPotions = 3;
     [SerializeField] int startingHealthPotions = 3;
-    [SerializeField] int potionHealAmount = 35;
 
     [Header("Level Progression")]
     [SerializeField] int startingLevel = 1;
@@ -45,17 +44,14 @@ public class PlayerStats : CharacterStats
 
 
     public int ExperienceToNextLevel => Mathf.Max(1, Mathf.RoundToInt(baseExperienceToLevel * Mathf.Pow(experienceGrowth, CurrentLevel - 1)));
-    public int ExperienceToPreviousLevel => CurrentLevel <= 1 ? 0 : Mathf.Max(1, Mathf.RoundToInt(baseExperienceToLevel * Mathf.Pow(experienceGrowth, CurrentLevel - 2)));
 
     public event System.Action<int, int> OnPotionsChanged;
     public event System.Action<int, int> OnExperienceChanged;
     public event System.Action<int> OnLevelChanged;
     public event System.Action<int> OnGoldChanged;
 
-
     float lastStaminaSpendTime;
     float attackRateModifier;
-
 
     protected override void Awake()
     {
@@ -98,12 +94,13 @@ public class PlayerStats : CharacterStats
         moveSpeedBase = selectedCharacter.Pace.StartPace();
     }
 
+    public override float GetAttackSpeed() => base.GetAttackSpeed() + attackRateModifier;
+
     void Start()
     {
         if (EquipmentManager.instance != null)
         {
-            EquipmentManager.instance.onEquipmentChanged +=
-                OnEquipmentChanged;
+            EquipmentManager.instance.onEquipmentChanged += OnEquipmentChanged;
         }
 
         lastStaminaSpendTime = -staminaRegenDelay;
@@ -144,45 +141,6 @@ public class PlayerStats : CharacterStats
         lastStaminaSpendTime = Time.time;
 
         return true;
-    }
-
-    // -------------------------
-    // Health Potions
-    // -------------------------
-
-    public bool TryUseHealthPotion()
-    {
-        if (IsDead)
-            return false;
-
-        if (CurrentHealthPotions <= 0)
-            return false;
-
-        if (currentHealth >= maxHealth.Value)
-            return false;
-
-        CurrentHealthPotions--;
-
-        Heal(potionHealAmount);
-
-        OnPotionsChanged?.Invoke(CurrentHealthPotions, maxHealthPotions);
-
-        return true;
-    }
-
-    public void AddHealthPotions(int amount)
-    {
-        if (amount <= 0)
-            return;
-
-        int oldAmount = CurrentHealthPotions;
-
-        CurrentHealthPotions = Mathf.Clamp(CurrentHealthPotions + amount, 0, maxHealthPotions);
-
-        if (CurrentHealthPotions != oldAmount)
-        {
-            OnPotionsChanged?.Invoke(CurrentHealthPotions, maxHealthPotions);
-        }
     }
 
     // -------------------------
@@ -268,28 +226,6 @@ public class PlayerStats : CharacterStats
             OnUltimateChargeChanged?.Invoke(Ultimate.CurrentCharge);
     }
 
-    public void MultiplyUltimateChargeRate(float multiplier) =>
-        ultimateChargeRateMultiplier *= Mathf.Max(0f, multiplier);
-
-    public void RemoveExperience(int amount)
-    {
-        if (amount <= 0 || CurrentLevel <= 1 && CurrentExperience <= 0)
-            return;
-
-        CurrentExperience -= amount;
-
-        while (CurrentExperience < 0 && CurrentLevel > 1)
-        {
-            LevelDown();
-
-            CurrentExperience += ExperienceToNextLevel;
-        }
-
-        CurrentExperience = Mathf.Max(CurrentExperience, 0);
-
-        OnExperienceChanged?.Invoke(CurrentExperience, ExperienceToNextLevel);
-    }
-
     void LevelDown()
     {
         if (CurrentLevel <= 1)
@@ -321,16 +257,6 @@ public class PlayerStats : CharacterStats
         Gold += amount;
 
         OnGoldChanged?.Invoke(Gold);
-    }
-
-    // -------------------------
-    // Combat
-    // -------------------------
-
-    
-    public float GetAttackSpeedWithWeapons()
-    {
-        return GetAttackSpeed() + attackRateModifier;
     }
 
     // -------------------------
@@ -369,8 +295,10 @@ public class PlayerStats : CharacterStats
                 RegainStamina(newWeapon.maxStaminaModifier);
         }
 
+
         RefreshStamina();
     }
+    
 
 
     void OnDestroy()
@@ -378,6 +306,7 @@ public class PlayerStats : CharacterStats
         if (EquipmentManager.instance != null)
         {
             EquipmentManager.instance.onEquipmentChanged -= OnEquipmentChanged;
+
         }
     }
 }
