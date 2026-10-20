@@ -44,7 +44,6 @@ public class PlayerCombat : CharacterCombat
         playerStats.AddUltimateCharge(damageDealt);
     }
 
-
     protected override Vector3 GetAimDirection(Vector3 origin)
     {
         Camera camera = Camera.main;
@@ -52,25 +51,19 @@ public class PlayerCombat : CharacterCombat
         if (camera == null)
             return base.GetAimDirection(origin);
 
-        Ray ray = new Ray(camera.transform.position, camera.transform.forward);
+        // Horizontal direction the player is facing
+        Vector3 playerForward = transform.forward;
+        playerForward.y = 0f;
+        playerForward.Normalize();
 
-        Vector3 point = ray.GetPoint(100f);
-        float closest = 100f;
+        // Camera's vertical aiming angle
+        float cameraPitch = camera.transform.eulerAngles.x;
 
-        foreach (RaycastHit hit in Physics.RaycastAll(ray, 100f, ~0, QueryTriggerInteraction.Ignore))
-        {
-            if (hit.collider.transform.root == transform.root)
-                continue;
+        // Apply camera pitch to the player's facing direction
+        Quaternion aimRotation = Quaternion.Euler(cameraPitch, transform.eulerAngles.y, 0f);
 
-            if (hit.distance < closest)
-            {
-                closest = hit.distance;
-                point = hit.point;
-            }
-        }
-
-        return (point - origin).normalized;
+        return (aimRotation * Vector3.forward).normalized;
     }
 
-    
+
 }

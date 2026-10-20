@@ -10,16 +10,23 @@ public class CameraController : MonoBehaviour
 
     // Offset from player to camera pivot.
     public Vector3 offset = new Vector3(0f, 2.5f, 0f);
-    public Vector3 lockOffset = new Vector3(0f, 4f, 0f);
 
     [SerializeField] float cameraDistance = 4f;
     public float mouseSensitivity = 3f;
 
     [Header("Orbit")]
+    public Vector3 lockOffset = new Vector3(0f, 4f, 0f);
     [SerializeField] float minPitch = -35f;
     [SerializeField] float maxPitch = 65f;
     [SerializeField] float rotationSmoothness = 15f;
     public float followSmoothness = 10f;
+
+    [Header("Lock Target")]
+    [SerializeField] float lockMinPitch = -15f;
+    [SerializeField] float lockMaxPitch = 25f;
+    [SerializeField] float lockRotationSmoothness = 7f;
+    public float lockFollowSmoothness = 3f;
+
 
     [Header("Camera Collision")]
     public LayerMask obstructionMask;
@@ -56,19 +63,19 @@ public class CameraController : MonoBehaviour
 
     readonly List<MeshRenderer> cleanup = new List<MeshRenderer>();
 
+
     void Start()
     {
         Vector3 angles = transform.eulerAngles;
 
         targetYaw = currentYaw = angles.y;
-
-        targetPitch = currentPitch =
-            Mathf.Clamp(Mathf.DeltaAngle(0f, angles.x), minPitch, maxPitch);
-
+        targetPitch = currentPitch = Mathf.Clamp(Mathf.DeltaAngle(0f, angles.x), minPitch, maxPitch);
         currentDistance = cameraDistance;
 
         if (target != null)
+        {
             currentPivot = target.position + offset;
+        }
 
         LockCursor();
     }
@@ -81,8 +88,7 @@ public class CameraController : MonoBehaviour
             Cursor.visible = true;
         }
 
-        if (Input.GetMouseButtonDown(0) &&
-            Cursor.lockState != CursorLockMode.Locked)
+        if (Input.GetMouseButtonDown(0) && Cursor.lockState != CursorLockMode.Locked)
         {
             LockCursor();
             return;
@@ -101,46 +107,51 @@ public class CameraController : MonoBehaviour
             RestoreAllMaterials();
             return;
         }
-        if (lockOnTarget != null)
+
+        float dt = Time.deltaTime;
+
+        // Check whether we are locked onto an enemy.
+        bool isLocked = lockOnTarget != null;
+
+        // Select camera settings based on lock-on state.
+        Vector3 activeOffset = isLocked ? lockOffset : offset;
+        float activeFollowSmoothness = isLocked ? lockFollowSmoothness : followSmoothness;
+        float activeRotationSmoothness = isLocked ? lockRotationSmoothness : rotationSmoothness;
+
+        // Calculate desired camera pivot.
+        Vector3 desiredPivot = target.position + activeOffset;
+
+        // Calculate lock-on camera rotation.
+        if (isLocked)
         {
-            Vector3 direction = lockOnTarget.position + Vector3.up - (target.position + lockOffset);
+            Vector3 direction = lockOnTarget.position + Vector3.up - desiredPivot;
 
             float horizontalDistance = new Vector2(direction.x, direction.z).magnitude;
 
             if (horizontalDistance > 0.01f)
             {
                 targetYaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-
-                targetPitch = Mathf.Clamp(Mathf.Atan2(-direction.y, horizontalDistance) * Mathf.Rad2Deg, minPitch, maxPitch);
+                targetPitch = Mathf.Clamp(Mathf.Atan2(-direction.y, horizontalDistance) * Mathf.Rad2Deg, lockMinPitch, lockMaxPitch);
             }
         }
 
-        float dt = Time.deltaTime;
-
-        // Smoothly follow the player with a pivot.
-        Vector3 desiredPivot = target.position + offset;
-
-        float followFactor = 1f - Mathf.Exp(-followSmoothness * dt);
+        // Smoothly follow the player using active settings.
+        float followFactor = 1f - Mathf.Exp(-activeFollowSmoothness * dt);
 
         currentPivot = Vector3.Lerp(currentPivot, desiredPivot, followFactor);
 
-        // Smooth yaw and pitch separately.
-        float rotationFactor =1f - Mathf.Exp(-rotationSmoothness * dt);
+        // Smoothly rotate using active settings.
+        float rotationFactor = 1f - Mathf.Exp(-activeRotationSmoothness * dt);
 
         currentYaw = Mathf.LerpAngle(currentYaw, targetYaw, rotationFactor);
-
         currentPitch = Mathf.Lerp(currentPitch, targetPitch, rotationFactor);
 
         Quaternion orbitRotation = Quaternion.Euler(currentPitch, currentYaw, 0f);
-
-        // Direction pointing backwards from the pivot.
         Vector3 cameraDirection = orbitRotation * Vector3.back;
 
-        // Determine the safe camera distance.
+        // Camera collision.
         float safeDistance = GetSafeCameraDistance(currentPivot, cameraDirection);
 
-        // Move inward immediately when obstructed,
-        // but return outward smoothly.
         if (safeDistance < currentDistance)
         {
             currentDistance = safeDistance;
@@ -152,12 +163,11 @@ public class CameraController : MonoBehaviour
             currentDistance = Mathf.Lerp(currentDistance, safeDistance, returnFactor);
         }
 
-        // Apply orbital position and rotation.
+        // Apply camera position and rotation.
         transform.position = currentPivot + cameraDirection * currentDistance;
 
         transform.rotation = orbitRotation;
 
-        // Fade only obstacles close to the camera.
         UpdateNearbyObstacleFade(dt);
     }
 
