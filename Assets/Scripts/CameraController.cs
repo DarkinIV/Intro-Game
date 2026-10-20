@@ -15,17 +15,17 @@ public class CameraController : MonoBehaviour
     public float mouseSensitivity = 3f;
 
     [Header("Orbit")]
-    public Vector3 lockOffset = new Vector3(0f, 4f, 0f);
     [SerializeField] float minPitch = -35f;
     [SerializeField] float maxPitch = 65f;
     [SerializeField] float rotationSmoothness = 15f;
     public float followSmoothness = 10f;
 
     [Header("Lock Target")]
+    public Vector3 lockOffset = new Vector3(0f, 3f, 0f);
     [SerializeField] float lockMinPitch = -15f;
     [SerializeField] float lockMaxPitch = 25f;
     [SerializeField] float lockRotationSmoothness = 7f;
-    public float lockFollowSmoothness = 3f;
+    public float lockFollowSmoothness = 4f;
 
 
     [Header("Camera Collision")]

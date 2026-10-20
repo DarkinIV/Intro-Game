@@ -3,7 +3,7 @@ using UnityEngine;
 /*
     Gives the player progression rewards when this enemy dies.
 
-    Add this component to each enemy prefab and set the XP and gold
+    Add this component to each enemy prefab and set the XP and Karma
     values independently in the Inspector.
 */
 [RequireComponent(typeof(CharacterStats))]
@@ -11,7 +11,7 @@ public class EnemyRewards : MonoBehaviour
 {
     [Header("Death Rewards")]
     [SerializeField] int experienceReward = 25;
-    [SerializeField] int goldReward = 10;
+    [SerializeField] int karmaReward = 10;
 
     CharacterStats stats;
     bool rewardsGiven;
@@ -56,6 +56,6 @@ public class EnemyRewards : MonoBehaviour
             return;
 
         playerStats.AddExperience(experienceReward);
-        playerStats.AddGold(goldReward);
+        playerStats.AddKarma(karmaReward);
     }
 }
