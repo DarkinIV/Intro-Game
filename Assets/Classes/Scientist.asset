@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdd27aad0cb740ea862173faa7aaaecf, type: 3}
+  m_Name: Scientist
+  m_EditorClassIdentifier: 
+  displayName: Scientist
+  maxHealth: 120
+  maxStamina: 100
+  staminaRegen: 30
+  staminaRegenDelay: 1
+  sprintStaminaPerSecond: 12
+  walkSpeed: 6
+  sprintSpeed: 11
+  dodgeStaminaCost: 30
+  dodgeDistance: 3
+  dodgeDuration: 0.25
+  iFrameDuration: 0.15
+  dodgeRecovery: 0.2
+  usesWhip: 0
+  airJumps: 0
+  airJumpStaminaCost: 15
+  canSlide: 0
+  slideStaminaCost: 15
+  canWallRun: 0
+  wallRunStaminaPerSecond: 15

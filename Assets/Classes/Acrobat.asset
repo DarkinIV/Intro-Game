@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdd27aad0cb740ea862173faa7aaaecf, type: 3}
+  m_Name: Acrobat
+  m_EditorClassIdentifier: 
+  displayName: Acrobat
+  maxHealth: 80
+  maxStamina: 150
+  staminaRegen: 45
+  staminaRegenDelay: 0.8
+  sprintStaminaPerSecond: 10
+  walkSpeed: 7.2
+  sprintSpeed: 13.2
+  dodgeStaminaCost: 20
+  dodgeDistance: 6
+  dodgeDuration: 0.35
+  iFrameDuration: 0.3
+  dodgeRecovery: 0.1
+  usesWhip: 1
+  airJumps: 1
+  airJumpStaminaCost: 15
+  canSlide: 1
+  slideStaminaCost: 15
+  canWallRun: 1
+  wallRunStaminaPerSecond: 15
