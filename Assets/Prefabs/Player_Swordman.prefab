@@ -770,7 +770,6 @@ MonoBehaviour:
     baseValue: 20
   maxHealthPotions: 3
   startingHealthPotions: 3
-  potionHealAmount: 35
   startingLevel: 1
   baseExperienceToLevel: 100
   experienceGrowth: 1.35
@@ -854,7 +853,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseDamage: 14
-  baseAttackSpeed: 1
   Target: {fileID: 0}
 --- !u!114 &6458733765736068126
 MonoBehaviour:
@@ -1980,7 +1978,8 @@ Transform:
   m_LocalPosition: {x: 0.471, y: 0, z: 0.266}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 5294264292858515225}
   m_Father: {fileID: 8599962216711512562}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8894740111972371557
@@ -2067,3 +2066,65 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1001 &5729397435339555225
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 5251895255633874206}
+    m_Modifications:
+    - target: {fileID: 503252856043671168, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 503252856043671168, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 503252856043671168, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 503252856043671168, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 503252856043671168, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 503252856043671168, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 503252856043671168, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 503252856043671168, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 503252856043671168, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 503252856043671168, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969241039888509039, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+      propertyPath: m_Name
+      value: Cube Sword
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+--- !u!4 &5294264292858515225 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 503252856043671168, guid: 43e8d5baea0763140964e3e7cf729796, type: 3}
+  m_PrefabInstance: {fileID: 5729397435339555225}
+  m_PrefabAsset: {fileID: 0}
