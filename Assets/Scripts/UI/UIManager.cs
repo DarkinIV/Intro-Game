@@ -51,14 +51,14 @@ public class UIManager : MonoBehaviour
 
     [Header("Player Resources")]
     [SerializeField] TMP_Text potionText;
-    [SerializeField] TMP_Text goldText;
+    [SerializeField] TMP_Text karmaText;
 
     [Header("Resource Feedback")]
-    [SerializeField] float goldCountMinDuration = 0.25f;
-    [SerializeField] float goldCountMaxDuration = 0.75f;
-    [SerializeField] int goldDifferenceForMaxDuration = 100;
-    [SerializeField] float goldPunchScale = 1.12f;
-    [SerializeField] float goldPunchDuration = 0.18f;
+    [SerializeField] float karmaCountMinDuration = 0.25f;
+    [SerializeField] float karmaCountMaxDuration = 0.75f;
+    [SerializeField] int karmaDifferenceForMaxDuration = 100;
+    [SerializeField] float karmaPunchScale = 1.12f;
+    [SerializeField] float karmaPunchDuration = 0.18f;
 
     [Header("Player Progression")]
     [SerializeField] TMP_Text levelText;
@@ -91,8 +91,8 @@ public class UIManager : MonoBehaviour
     Coroutine shakeRoutine;
     Coroutine staminaDamageDrainRoutine;
     Coroutine experienceRoutine;
-    Coroutine goldRoutine;
-    Coroutine goldPunchRoutine;
+    Coroutine karmaRoutine;
+    Coroutine karmaPunchRoutine;
     Coroutine levelPunchRoutine;
 
     Vector2 healthBarStartPosition;
@@ -103,7 +103,7 @@ public class UIManager : MonoBehaviour
     bool initialising = true;
 
     int displayedExperience;
-    int displayedGold;
+    int displayedKarma;
     int lastDisplayedLevel = -1;
     int pendingLevelWraps;
 
@@ -126,7 +126,7 @@ public class UIManager : MonoBehaviour
         playerStats.OnPotionsChanged += UpdatePotions;
         playerStats.OnExperienceChanged += UpdateExperience;
         playerStats.OnLevelChanged += UpdateLevel;
-        playerStats.OnGoldChanged += UpdateGold;
+        playerStats.OnKarmaChanged += UpdateKarma;
 
         UpdatePlayerHealth(playerStats.currentHealth, playerStats.maxHealth.Value);
 
@@ -149,7 +149,7 @@ public class UIManager : MonoBehaviour
         UpdateExperience(playerStats.CurrentExperience, playerStats.ExperienceToNextLevel);
 
         UpdateLevel(playerStats.CurrentLevel);
-        UpdateGold(playerStats.Gold);
+        UpdateKarma(playerStats.Karma);
 
         initialising = false;
 
@@ -568,43 +568,43 @@ public class UIManager : MonoBehaviour
     }
 
 
-    void UpdateGold(int gold)
+    void UpdateKarma(int karma)
     {
-        if (goldText == null)
+        if (karmaText == null)
             return;
 
         if (initialising)
         {
-            displayedGold = gold;
-            goldText.text = gold.ToString();
+            displayedKarma = karma;
+            karmaText.text = karma.ToString();
             return;
         }
 
-        if (goldRoutine != null)
-            StopCoroutine(goldRoutine);
+        if (karmaRoutine != null)
+            StopCoroutine(karmaRoutine);
 
-        goldRoutine = StartCoroutine(AnimateGold(gold));
+        karmaRoutine = StartCoroutine(AnimateKarma(karma));
 
-        if (gold > displayedGold)
+        if (karma > displayedKarma)
         {
-            if (goldPunchRoutine != null)
-                StopCoroutine(goldPunchRoutine);
+            if (karmaPunchRoutine != null)
+                StopCoroutine(karmaPunchRoutine);
 
-            goldText.rectTransform.localScale = Vector3.one;
+            karmaText.rectTransform.localScale = Vector3.one;
 
-            goldPunchRoutine = StartCoroutine(PulseScale(goldText.rectTransform, goldPunchScale, goldPunchDuration));
+            karmaPunchRoutine = StartCoroutine(PulseScale(karmaText.rectTransform, karmaPunchScale, karmaPunchDuration));
         }
     }
 
 
-    IEnumerator AnimateGold(int targetGold)
+    IEnumerator AnimateKarma(int targetKarma)
     {
-        int startGold = displayedGold;
-        int difference = Mathf.Abs(targetGold - startGold);
+        int startKarma = displayedKarma;
+        int difference = Mathf.Abs(targetKarma - startKarma);
 
-        float amountT = Mathf.InverseLerp(1f, Mathf.Max(2, goldDifferenceForMaxDuration), difference);
+        float amountT = Mathf.InverseLerp(1f, Mathf.Max(2, karmaDifferenceForMaxDuration), difference);
 
-        float duration = Mathf.Lerp(goldCountMinDuration, goldCountMaxDuration, amountT);
+        float duration = Mathf.Lerp(karmaCountMinDuration, karmaCountMaxDuration, amountT);
 
         duration = Mathf.Max(0.01f, duration);
 
@@ -619,17 +619,17 @@ public class UIManager : MonoBehaviour
             // Ease-out feels like coins arrive quickly and settle naturally.
             float easedT = 1f - Mathf.Pow(1f - t, 3f);
 
-            displayedGold = Mathf.RoundToInt(Mathf.Lerp(startGold, targetGold, easedT));
+            displayedKarma = Mathf.RoundToInt(Mathf.Lerp(startKarma, targetKarma, easedT));
 
-            goldText.text = displayedGold.ToString();
+            karmaText.text = displayedKarma.ToString();
 
             yield return null;
         }
 
-        displayedGold = targetGold;
-        goldText.text = targetGold.ToString();
+        displayedKarma = targetKarma;
+        karmaText.text = targetKarma.ToString();
 
-        goldRoutine = null;
+        karmaRoutine = null;
     }
 
 
@@ -725,7 +725,7 @@ public class UIManager : MonoBehaviour
             playerStats.OnPotionsChanged -= UpdatePotions;
             playerStats.OnExperienceChanged -= UpdateExperience;
             playerStats.OnLevelChanged -= UpdateLevel;
-            playerStats.OnGoldChanged -= UpdateGold;
+            playerStats.OnKarmaChanged -= UpdateKarma;
         }
     }
 }

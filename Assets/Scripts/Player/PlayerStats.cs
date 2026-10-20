@@ -11,8 +11,6 @@ public class PlayerStats : CharacterStats
     [SerializeField] int baseExperienceToLevel = 100;
     [SerializeField] float experienceGrowth = 1.35f;
 
-
-
     [Header("Rogue Settings")]
     [SerializeField] int buffMilestoneInterval = 5;
     [SerializeField] int levelsLostOnDeath = 1;
@@ -24,7 +22,7 @@ public class PlayerStats : CharacterStats
     public int CurrentHealthPotions { get; private set; }
     public int CurrentLevel { get; private set; }
     public int CurrentExperience { get; private set; }
-    public int Gold { get; private set; }
+    public int Karma { get; private set; }
 
     public int MaxHealthPotions => maxHealthPotions;
 
@@ -48,7 +46,7 @@ public class PlayerStats : CharacterStats
     public event System.Action<int, int> OnPotionsChanged;
     public event System.Action<int, int> OnExperienceChanged;
     public event System.Action<int> OnLevelChanged;
-    public event System.Action<int> OnGoldChanged;
+    public event System.Action<int> OnKarmaChanged;
 
     float lastStaminaSpendTime;
     float attackRateModifier;
@@ -246,17 +244,17 @@ public class PlayerStats : CharacterStats
         OnLevelChanged?.Invoke(CurrentLevel);
     }
     // -------------------------
-    // Gold
+    // Karma
     // -------------------------
 
-    public void AddGold(int amount)
+    public void AddKarma(int amount)
     {
         if (amount <= 0)
             return;
 
-        Gold += amount;
+        Karma += amount;
 
-        OnGoldChanged?.Invoke(Gold);
+        OnKarmaChanged?.Invoke(Karma);
     }
 
     // -------------------------
