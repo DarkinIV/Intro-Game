@@ -657,7 +657,6 @@ GameObject:
   m_Component:
   - component: {fileID: 4649988152852904}
   - component: {fileID: 54321640823523872}
-  - component: {fileID: 9030915682622247662}
   - component: {fileID: 114536092619247222}
   - component: {fileID: 114658985731270352}
   - component: {fileID: 320408162277833935}
@@ -667,6 +666,16 @@ GameObject:
   - component: {fileID: 4968533499862113335}
   - component: {fileID: 173570958769785460}
   - component: {fileID: 1881558593130913331}
+  - component: {fileID: 4573072523489111381}
+  - component: {fileID: 303048884214000052}
+  - component: {fileID: 3940984833178764181}
+  - component: {fileID: 1679651724871794614}
+  - component: {fileID: 5500000000000000001}
+  - component: {fileID: 5500000000000000002}
+  - component: {fileID: 5500000000000000003}
+  - component: {fileID: 5500000000000000004}
+  - component: {fileID: 5700000000000000001}
+  - component: {fileID: 5700000000000000002}
   m_Layer: 9
   m_Name: Player_Rogue
   m_TagString: Player
@@ -721,28 +730,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 1
---- !u!114 &9030915682622247662
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1378388896379010}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: edb531e063c8953419425c9ea0cabfd2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sprintMultiplier: 1.5
-  sprintStaminaPerSecond: 15
-  isSprinting: 0
-  dashDistance: 4
-  dashDuration: 0.15
-  dashCooldown: 0.4
-  dashStaminaCost: 20
-  iframeStartPercent: 0
-  iframeEndPercent: 0.8
-  lockOnRange: 12
 --- !u!114 &114536092619247222
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -769,7 +756,6 @@ MonoBehaviour:
     baseValue: 20
   maxHealthPotions: 3
   startingHealthPotions: 3
-  potionHealAmount: 35
   startingLevel: 1
   baseExperienceToLevel: 100
   experienceGrowth: 1.35
@@ -853,7 +839,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseDamage: 10
-  baseAttackSpeed: 1
   Target: {fileID: 0}
 --- !u!114 &-6324337633190070133
 MonoBehaviour:
@@ -915,9 +900,126 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   weaponHolder: {fileID: 2442047678390701811}
-  startingWeapon: {fileID: 11400000, guid: 673d8ed2ff61cea488d7a37b0828b7ad, type: 2}
+  startingWeapon: {fileID: 11400000, guid: ac0ba7a0d0d9e0003a2b3c4d5e6f7a83, type: 2}
   weaponDropSpawnPoint: {fileID: 2687279360119507554}
   weaponPickupPrefab: {fileID: 0}
+--- !u!114 &4573072523489111381
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378388896379010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85600445c6a570646a42d110bd16678f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sprintMultiplier: 1.5
+  sprintStaminaPerSecond: 15
+  isSprinting: 0
+  dashDistance: 4
+  dashDuration: 0.15
+  dashCooldown: 0.4
+  dashStaminaCost: 20
+  iframeStartPercent: 0
+  iframeEndPercent: 0.8
+  lockOnRange: 12
+  acroSprintMultiplier: 1.5
+  acroSprintStaminaPerSecond: 10
+  jumpHeight: 1.6
+  timeToApex: 0.35
+  fallMultiplier: 1.5
+  coyoteTime: 0.1
+  jumpBufferTime: 0.1
+  airJumps: 1
+  airJumpStaminaCost: 15
+  groundCheckDistance: 0.15
+  dodgeKey: 306
+  dodgeDistance: 5
+  dodgeDuration: 0.3
+  dodgeIFrames: 0.3
+  dodgeStaminaCost: 20
+  dodgeCooldown: 0.15
+  dodgeInputBuffer: 0.15
+  slideDuration: 0.6
+  slideBoost: 1.15
+  slideStaminaCost: 15
+  slideHeightPercent: 0.5
+  wallRunMaxTime: 1.2
+  wallRunUpSpeed: 2
+  wallRunEndFallSpeed: 4
+  wallClimbMaxTime: 0.8
+  wallClimbSpeed: 6
+  climbAngle: 35
+  wallStaminaPerSecond: 15
+  wallMinSpeed: 3
+  wallCheckDistance: 0.5
+  wallMinHeightAboveGround: 0.8
+  wallJumpPush: 7
+  wallLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  acroLockOnRange: 12
+  ultimateKey: 113
+  perfectDodgeRange: 3.5
+  perfectDodgeCharge: 60
+  autoDodgeRange: 4
+--- !u!114 &303048884214000052
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378388896379010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c35800fd510e6842a555ce4b03cf2f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pullStaminaCost: 25
+  pullRange: 10
+  pullCooldown: 1
+  pullStopDistance: 2.5
+  enemyPullTime: 0.25
+  pullStunTime: 0.6
+  zipSpeed: 22
+  zipStopDistance: 2.5
+  zipMaxTime: 0.6
+  slamSpeed: 28
+  slamDamageMultiplier: 2.5
+  slamRadius: 3.5
+  slamRecovery: 0.3
+  slamMaxTime: 2
+  whipColor: {r: 0.45, g: 0.25, b: 0.1, a: 1}
+  whipThickness: 0.05
+--- !u!114 &3940984833178764181
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378388896379010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2397ac6e749f554cb9e307ff47bec4e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  showDebug: 1
+  debugTint: {r: 0, g: 1, b: 1, a: 1}
+--- !u!114 &1679651724871794614
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378388896379010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff8eaaddf07a7e94089f143fba47ca00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  show: 1
 --- !u!1 &1440863775532712
 GameObject:
   m_ObjectHideFlags: 0
@@ -2056,3 +2158,77 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2687279360119507554}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5500000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378388896379010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34bcfa1428aa4d7491ec3df8cf8bac2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &5500000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378388896379010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e8397f0f1b644fbb297cb22b2fb8080, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &5500000000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378388896379010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d9f2558fdc24dccb65c5c0f3e8ffb42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &5500000000000000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378388896379010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a458f090c6044b71bc80fa9f824e7048, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &5700000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378388896379010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06ed6223be764a488cb40909755a0961, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  basicKey: 0
+  ultimateKey: 113
+--- !u!114 &5700000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378388896379010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25f6c8cba5fa4a6081880bf0dbd6fa4b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

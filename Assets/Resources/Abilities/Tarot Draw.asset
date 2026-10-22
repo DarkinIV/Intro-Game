@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3eae4dc6224346ae8cd7dfec1ab8985b, type: 3}
+  m_Name: Tarot Draw
+  m_EditorClassIdentifier:
+  abilityName: Tarot Draw
+  icon: {fileID: 0}
+  cooldown: 8
+  description: Draw a tarot card. The next card is always visible.
+  sunWeight: 30
+  towerWeight: 30
+  deathWeight: 25
+  starWeight: 20
+  foolWeight: 15
+  starManaPercent: 0.5
+  sunHealPercent: 0.3
+  towerRadius: 3
+  towerMagicMultiplier: 1.5
+  deathThreshold: 0.3
+  chargedCardDuration: 10
+  foolCurseChance: 0.5
+  foolSlowPercent: 0.3
+  foolCurseDuration: 5

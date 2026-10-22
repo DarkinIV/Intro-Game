@@ -9,10 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: da418806e74b428a8613b65c3e423374, type: 3}
   m_Name: SpinAttack
-  m_EditorClassIdentifier: Assembly-CSharp::BasicAbilityData
+  m_EditorClassIdentifier: Assembly-CSharp::SpinAttackData
   abilityName: Spin Attack
   icon: {fileID: 0}
   cooldown: 15
   description: Spin to hit more people at once
+  radius: 3
+  strengthMultiplier: 1.5
+  spinTime: 0.35

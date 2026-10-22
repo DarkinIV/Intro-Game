@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2e40dbeeae5da484482e23f60c40525c, type: 3}
-  m_Name: Witch
+  m_Name: Fortune Teller
   m_EditorClassIdentifier: 
-  characterName: Witch
+  characterName: Fortune Teller
   portrait: {fileID: 0}
   animatorController: {fileID: 9100000, guid: 05262799862be4dd08c84d67ded6276f, type: 2}
   playerPrefab: {fileID: 1378388896379010, guid: 04ba5f43574113c4aba6ea8a80aa5bf3, type: 3}
@@ -22,5 +22,5 @@ MonoBehaviour:
   Magic: 4
   AttackSpeed: 2
   Pace: 3
-  basicAbility: {fileID: 0}
-  ultimateAbility: {fileID: 0}
+  basicAbility: {fileID: 11400000, guid: 9a36ace5b2194da2a9a868bb472ffb1e, type: 2}
+  ultimateAbility: {fileID: 11400000, guid: aeea116c47b84d8aab3bbffe0b2a1426, type: 2}

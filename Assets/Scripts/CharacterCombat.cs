@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Shared combat mechanism between the player and the enemy AIs
+//Shared combat mechanism between the player and the enemy AIs
 
 [RequireComponent(typeof(CharacterStats))]
 [RequireComponent(typeof(WeaponInventory))]
@@ -33,8 +33,7 @@ public class CharacterCombat : MonoBehaviour
 
     protected virtual bool CanQueueCombo => true;
 
-    // ATTACK INPUT
-
+    //attack input 
     public virtual void TryAttack()
     {
         if (stats.IsDead || weapons.CurrentWeapon == null || animator == null)
@@ -46,7 +45,7 @@ public class CharacterCombat : MonoBehaviour
             return;
         }
 
-        // Only accept another input while the combo window is open
+        //only accept another input while the combo window is open
         if (canCombo && CanQueueCombo)
             queued = true;
     }
@@ -66,7 +65,7 @@ public class CharacterCombat : MonoBehaviour
         OnAttack?.Invoke();
     }
 
-    // ANIMATION EVENTS
+    //anim events 
 
     public void OpenComboWindow()
     {
@@ -107,7 +106,7 @@ public class CharacterCombat : MonoBehaviour
         animator.ResetTrigger("Attack");
     }
 
-    // MELEE
+    //meele
 
     public void OpenHitbox()
     {
@@ -123,7 +122,7 @@ public class CharacterCombat : MonoBehaviour
             weapons.Hitbox.StopSwing();
     }
 
-    // RANGED
+    //ranged
     public void FireProjectile()
     {
         if (weapons.CurrentWeapon == null)
@@ -162,7 +161,7 @@ public class CharacterCombat : MonoBehaviour
         return Target != null ? (Target.position + Vector3.up - origin).normalized : transform.forward;
     }
 
-    // CHARACTER-SPECIFIC COMBAT
+    // char specific combat
 
     protected virtual bool CanAttack() => true;
     protected virtual bool ConsumeAttackCost() => true;
@@ -175,14 +174,18 @@ public class CharacterCombat : MonoBehaviour
 
     public bool CanDamage(CharacterStats victim)
     {
-        // Status validation
+        //Status validation
         if (victim == null || victim == stats || stats.IsDead || victim.IsDead)
             return false;
 
-        // Friendly fire check based on tags
+        //Invulnerability hook so a victim with an IInvulnerable component (dodge i-frames and/or shield block) can refuse the hit
+        if (victim.TryGetComponent(out IInvulnerable invulnerable) && invulnerable.BlocksHitFrom(this))
+            return false;
+
+        //Friendly fire check based on tags
         if (gameObject.CompareTag(victim.gameObject.tag))
         {
-            return false; // Same tags will return false
+            return false; //same tags will return false
         }
 
         return true;
