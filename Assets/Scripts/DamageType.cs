@@ -1,9 +1,4 @@
-/*
-    Used to tell combat feedback what kind of damage was dealt.
-
-    Existing attacks remain Physical because CharacterStats.TakeDamage()
-    defaults to DamageType.Physical.
-*/
+// Used so the damage numbers can show physical and magic hits in different colours
 public enum DamageType
 {
     Physical,

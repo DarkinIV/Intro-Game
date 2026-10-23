@@ -11,10 +11,11 @@ public class WeaponItem : Equipment
 
     [Header("Attack")]
     public AttackKind attackKind = AttackKind.Melee;
-    [Min(1)] public int comboLength = 1;
     [Min(0)] public int attackStaminaCost = 15;
     public float attackRateModifier = 0f;
     public int bonusDamage = 0;
+    [Tooltip("How fast you can move while attacking. 0 means you stand still")]
+    [Range(0f, 1f)] public float attackMoveMultiplier = 0f;
 
     [Header("Projectile (if ranged)")]
     public GameObject projectilePrefab;
@@ -23,18 +24,15 @@ public class WeaponItem : Equipment
     [Min(0.1f)] public float projectileLifetime = 5f;
     public float projectileTurnSpeed = 360f;
 
-    [Header("Existing Character Modifiers")]
+    [Header("Stat Bonuses")]
     public int maxStaminaModifier = 0;
     public int moveSpeedModifier = 0;
-
-    public enum WeaponType { Sword, Dagger, Staff }
-    public WeaponType weaponType = WeaponType.Sword;
-    [HideInInspector] public float attackRadiusOverride = 0f;
 
     protected override void OnValidate()
     {
         base.OnValidate();
-        category = ItemCategory.Weapon;
+
+        // Weapons always go in the weapon slot and never stack
         equipSlot = EquipmentSlot.Weapon;
         isStackable = false;
         maxStack = 1;

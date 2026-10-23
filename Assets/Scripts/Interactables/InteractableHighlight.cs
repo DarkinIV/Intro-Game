@@ -1,14 +1,10 @@
-using System.Linq;
 using UnityEngine;
 
-/*
-    Highlights an interactable object when the player is close enough
-    to interact with it.
-*/
+// Tints an interactable object when the player is close enough to use it
 public class InteractableHighlight : MonoBehaviour
 {
     public Color color = Color.white;
-    public Renderer meshRenderer;
+    public Renderer meshRenderer;   // uses the first renderer it finds if this is empty
 
     Material[] materials;
     Color[] originalColours;
@@ -18,23 +14,16 @@ public class InteractableHighlight : MonoBehaviour
         if (meshRenderer == null)
             meshRenderer = GetComponentInChildren<Renderer>();
 
-        if (meshRenderer == null)
-            return;
-
         materials = meshRenderer.materials;
-        originalColours = materials.Select(x => x.color).ToArray();
+        originalColours = new Color[materials.Length];
+
+        for (int i = 0; i < materials.Length; i++)
+            originalColours[i] = materials[i].color;
     }
 
     public void SetHighlighted(bool highlighted)
     {
-        if (materials == null)
-            return;
-
         for (int i = 0; i < materials.Length; i++)
-        {
-            materials[i].color = highlighted
-                ? originalColours[i] * color
-                : originalColours[i];
-        }
+            materials[i].color = highlighted ? originalColours[i] * color : originalColours[i];
     }
 }

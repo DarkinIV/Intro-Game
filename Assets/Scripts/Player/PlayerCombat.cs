@@ -1,10 +1,12 @@
-
 using UnityEngine;
 
+// Combat for all the player characters. Each character has its own version of this (AcrobatCombat etc).
 [RequireComponent(typeof(PlayerStats))]
 public class PlayerCombat : CharacterCombat
 {
-    PlayerStats playerStats;
+    protected PlayerStats playerStats;
+
+    protected int AttackStaminaCost => weapons.CurrentWeapon != null ? weapons.CurrentWeapon.attackStaminaCost : 15;
 
     protected override void Awake()
     {
@@ -12,26 +14,19 @@ public class PlayerCombat : CharacterCombat
         base.Awake();
     }
 
-    void Update()
+    protected virtual void Update()
     {
-        if (animator == null)
-            return;
-
-        animator.SetFloat("AttackSpeed", Mathf.Max(0.01f, playerStats.GetAttackSpeed()));
+        animator.SetFloat("AttackSpeed", playerStats.GetAttackSpeed());
     }
 
     protected override bool CanAttack()
     {
-        int cost = weapons.CurrentWeapon != null ? weapons.CurrentWeapon.attackStaminaCost : 15;
-
         return playerStats.currentStamina >= 1;
     }
 
     protected override bool ConsumeAttackCost()
     {
-        int cost = weapons.CurrentWeapon != null ? weapons.CurrentWeapon.attackStaminaCost : 15;
-
-        return playerStats.TrySpendStamina(cost);
+        return playerStats.TrySpendStamina(AttackStaminaCost);
     }
 
     protected override int GetAttackDamage()
@@ -39,31 +34,16 @@ public class PlayerCombat : CharacterCombat
         return playerStats.strength.Value;
     }
 
+    // Damage we deal charges the ultimate
     protected override void OnSuccessfulHit(CharacterStats target, int damageDealt)
     {
         playerStats.AddUltimateCharge(damageDealt);
     }
 
+    // Shoot in the direction the player faces, tilted up or down to match the camera
     protected override Vector3 GetAimDirection(Vector3 origin)
     {
-        Camera camera = Camera.main;
-
-        if (camera == null)
-            return base.GetAimDirection(origin);
-
-        // Horizontal direction the player is facing
-        Vector3 playerForward = transform.forward;
-        playerForward.y = 0f;
-        playerForward.Normalize();
-
-        // Camera's vertical aiming angle
-        float cameraPitch = camera.transform.eulerAngles.x;
-
-        // Apply camera pitch to the player's facing direction
-        Quaternion aimRotation = Quaternion.Euler(cameraPitch, transform.eulerAngles.y, 0f);
-
-        return (aimRotation * Vector3.forward).normalized;
+        float cameraPitch = Camera.main.transform.eulerAngles.x;
+        return Quaternion.Euler(cameraPitch, transform.eulerAngles.y, 0f) * Vector3.forward;
     }
-
-
 }

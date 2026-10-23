@@ -1,88 +1,46 @@
 using UnityEngine;
-using System.Collections.Generic;
-using UnityEngine.UI;
 
-/* This object manages the inventory UI. */
+// Keeps the inventory slots on screen matching what's in the Inventory
+public class InventoryUI : MonoBehaviour
+{
+    public Transform itemsParent;   // the object all the slots are under
 
-public class InventoryUI : MonoBehaviour {
+    Inventory inventory;
+    InventorySlot[] slots;
 
-	public GameObject inventoryUI;	// The entire UI
-	public Transform itemsParent;	// The parent object of all the items
+    void Awake()
+    {
+        slots = itemsParent.GetComponentsInChildren<InventorySlot>(true);
+    }
 
-	Inventory inventory;	// Our current inventory
-	InventorySlot[] cachedSlots;
+    void Start()
+    {
+        inventory = Inventory.instance;
+        inventory.onItemChangedCallback += UpdateUI;
+        UpdateUI();
+    }
 
-	void Awake()
-	{
-		CacheSlots(force: true);
-	}
+    void OnEnable()
+    {
+        // The panel is hidden most of the time, so refresh it when it opens
+        if (inventory != null)
+            UpdateUI();
+    }
 
-	void Start ()
-	{
-		inventory = Inventory.instance;
-		if (inventory != null)
-			inventory.onItemChangedCallback += UpdateUI;
+    void OnDestroy()
+    {
+        if (inventory != null)
+            inventory.onItemChangedCallback -= UpdateUI;
+    }
 
-		CacheSlots(force: true);
-		UpdateUI();
-	}
-
-	void OnEnable()
-	{
-		CacheSlots(force: false);
-		UpdateUI();
-	}
-
-	void OnDisable()
-	{
-	}
-
-	void Update ()
-	{
-		
-	}
-
-	public void UpdateUI ()
-	{
-		CacheSlots(force: false);
-
-		if (cachedSlots == null)
-			return;
-
-		int entryCount = inventory != null ? inventory.items.Count : 0;
-
-		for (int i = 0; i < cachedSlots.Length; i++)
-		{
-			if (i < entryCount)
-			{
-				cachedSlots[i].AddItem(inventory.items[i]);
-			}
-			else
-			{
-				cachedSlots[i].ClearSlot();
-			}
-		}
-	}
-
-	void CacheSlots(bool force)
-	{
-		if (!force && cachedSlots != null && cachedSlots.Length > 0)
-			return;
-
-		Transform searchRoot = itemsParent != null ? itemsParent : transform;
-		if (searchRoot == null)
-		{
-			cachedSlots = new InventorySlot[0];
-			return;
-		}
-
-		cachedSlots = searchRoot.GetComponentsInChildren<InventorySlot>(includeInactive: true);
-	}
-
-	void OnDestroy()
-	{
-		if (inventory != null)
-			inventory.onItemChangedCallback -= UpdateUI;
-	}
-
+    public void UpdateUI()
+    {
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (i < inventory.items.Count)
+                slots[i].AddItem(inventory.items[i]);
+            else
+                slots[i].ClearSlot();
+        }
+    }
 }

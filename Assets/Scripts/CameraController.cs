@@ -1,87 +1,80 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 
+// Third person camera that orbits the player with the mouse.
+// When locked on it turns to keep the enemy in view instead.
+// It also pulls in closer when a wall is in the way, and fades out objects that get right up close to it.
 public class CameraController : MonoBehaviour
 {
     [Header("Camera Movement")]
     public Transform target;
     public Transform lockOnTarget;
 
-    // Offset from player to camera pivot.
-    public Vector3 offset = new Vector3(0f, 2.5f, 0f);
-
-    [SerializeField] float cameraDistance = 4f;
-    public float mouseSensitivity = 3f;
+    [SerializeField] Vector3 offset = new Vector3(0f, 2.5f, 0f);   // from the player's feet to the point we orbit around
+    [SerializeField] float cameraDistance = 5f;
+    [SerializeField] float mouseSensitivity = 3f;
 
     [Header("Orbit")]
     [SerializeField] float minPitch = -35f;
     [SerializeField] float maxPitch = 65f;
     [SerializeField] float rotationSmoothness = 15f;
-    public float followSmoothness = 10f;
+    [SerializeField] float followSmoothness = 10f;
 
     [Header("Lock Target")]
-    public Vector3 lockOffset = new Vector3(0f, 3f, 0f);
+    [SerializeField] Vector3 lockOffset = new Vector3(0f, 3f, 0f);
     [SerializeField] float lockMinPitch = -15f;
     [SerializeField] float lockMaxPitch = 25f;
     [SerializeField] float lockRotationSmoothness = 7f;
-    public float lockFollowSmoothness = 4f;
-
+    [SerializeField] float lockFollowSmoothness = 4f;
 
     [Header("Camera Collision")]
-    public LayerMask obstructionMask;
+    [SerializeField] LayerMask obstacleMask;
     [SerializeField] float collisionRadius = 0.25f;
     [SerializeField] float collisionPadding = 0.15f;
     [SerializeField] float distanceReturnSpeed = 5f;
 
     [Header("Nearby Obstacle Fade")]
+    [SerializeField] LayerMask fadeMask;
     [SerializeField] float fadeDetectionRadius = 0.65f;
-    public float fadeSpeed = 5f;
-
+    [SerializeField] float fadeSpeed = 5f;
     [Range(0f, 1f)]
-    public float fadedAlpha = 0.2f;
+    [SerializeField] float fadedAlpha = 0.2f;
 
     float targetYaw;
     float targetPitch;
-
     float currentYaw;
     float currentPitch;
     float currentDistance;
-
     Vector3 currentPivot;
 
-    // Each renderer stores its original colours.
-    class FadeInfo
+    // An object we've faded, with its original colours so we can put them back
+    class FadedObject
     {
-        public MeshRenderer renderer;
-        public Color[] originalColors;
+        public Material[] materials;
+        public Color[] originalColours;
         public float alpha = 1f;
-        public bool shouldFade;
+        public float targetAlpha = 1f;
     }
 
-    readonly Dictionary<MeshRenderer, FadeInfo> fadedRenderers = new Dictionary<MeshRenderer, FadeInfo>();
-
-    readonly List<MeshRenderer> cleanup = new List<MeshRenderer>();
-
+    Dictionary<Renderer, FadedObject> fadedObjects = new Dictionary<Renderer, FadedObject>();
+    List<Renderer> finishedFading = new List<Renderer>();
 
     void Start()
     {
         Vector3 angles = transform.eulerAngles;
-
         targetYaw = currentYaw = angles.y;
         targetPitch = currentPitch = Mathf.Clamp(Mathf.DeltaAngle(0f, angles.x), minPitch, maxPitch);
         currentDistance = cameraDistance;
 
         if (target != null)
-        {
             currentPivot = target.position + offset;
-        }
 
         LockCursor();
     }
 
     void Update()
     {
+        // Escape frees the mouse, clicking locks it again
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             Cursor.lockState = CursorLockMode.None;
@@ -94,9 +87,12 @@ public class CameraController : MonoBehaviour
             return;
         }
 
+        // The mouse only moves the camera when we're not locked on
         if (Cursor.lockState == CursorLockMode.Locked && lockOnTarget == null)
         {
-            HandleMouseInput();
+            targetYaw += Input.GetAxis("Mouse X") * mouseSensitivity;
+            targetPitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
+            targetPitch = Mathf.Clamp(targetPitch, minPitch, maxPitch);
         }
     }
 
@@ -104,232 +100,169 @@ public class CameraController : MonoBehaviour
     {
         if (target == null)
         {
-            RestoreAllMaterials();
+            RestoreAll();
             return;
         }
 
-        float dt = Time.deltaTime;
+        bool locked = lockOnTarget != null;
 
-        // Check whether we are locked onto an enemy.
-        bool isLocked = lockOnTarget != null;
+        Vector3 activeOffset = locked ? lockOffset : offset;
+        float followSpeed = locked ? lockFollowSmoothness : followSmoothness;
+        float rotationSpeed = locked ? lockRotationSmoothness : rotationSmoothness;
 
-        // Select camera settings based on lock-on state.
-        Vector3 activeOffset = isLocked ? lockOffset : offset;
-        float activeFollowSmoothness = isLocked ? lockFollowSmoothness : followSmoothness;
-        float activeRotationSmoothness = isLocked ? lockRotationSmoothness : rotationSmoothness;
-
-        // Calculate desired camera pivot.
         Vector3 desiredPivot = target.position + activeOffset;
 
-        // Calculate lock-on camera rotation.
-        if (isLocked)
+        // When locked on, point the camera at the enemy
+        if (locked)
         {
-            Vector3 direction = lockOnTarget.position + Vector3.up - desiredPivot;
+            Vector3 toEnemy = lockOnTarget.position + Vector3.up - desiredPivot;
+            float flatDistance = new Vector2(toEnemy.x, toEnemy.z).magnitude;
 
-            float horizontalDistance = new Vector2(direction.x, direction.z).magnitude;
-
-            if (horizontalDistance > 0.01f)
+            if (flatDistance > 0.01f)
             {
-                targetYaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-                targetPitch = Mathf.Clamp(Mathf.Atan2(-direction.y, horizontalDistance) * Mathf.Rad2Deg, lockMinPitch, lockMaxPitch);
+                targetYaw = Mathf.Atan2(toEnemy.x, toEnemy.z) * Mathf.Rad2Deg;
+                targetPitch = Mathf.Clamp(Mathf.Atan2(-toEnemy.y, flatDistance) * Mathf.Rad2Deg, lockMinPitch, lockMaxPitch);
             }
         }
 
-        // Smoothly follow the player using active settings.
-        float followFactor = 1f - Mathf.Exp(-activeFollowSmoothness * dt);
+        // Smooth follow and rotation (using Exp so it's the same at any frame rate)
+        currentPivot = Vector3.Lerp(currentPivot, desiredPivot, 1f - Mathf.Exp(-followSpeed * Time.deltaTime));
 
-        currentPivot = Vector3.Lerp(currentPivot, desiredPivot, followFactor);
+        float rotationT = 1f - Mathf.Exp(-rotationSpeed * Time.deltaTime);
+        currentYaw = Mathf.LerpAngle(currentYaw, targetYaw, rotationT);
+        currentPitch = Mathf.Lerp(currentPitch, targetPitch, rotationT);
 
-        // Smoothly rotate using active settings.
-        float rotationFactor = 1f - Mathf.Exp(-activeRotationSmoothness * dt);
+        Quaternion rotation = Quaternion.Euler(currentPitch, currentYaw, 0f);
+        Vector3 backwards = rotation * Vector3.back;
 
-        currentYaw = Mathf.LerpAngle(currentYaw, targetYaw, rotationFactor);
-        currentPitch = Mathf.Lerp(currentPitch, targetPitch, rotationFactor);
-
-        Quaternion orbitRotation = Quaternion.Euler(currentPitch, currentYaw, 0f);
-        Vector3 cameraDirection = orbitRotation * Vector3.back;
-
-        // Camera collision.
-        float safeDistance = GetSafeCameraDistance(currentPivot, cameraDirection);
-
+        // Jump straight in when something is in the way, but move back out slowly
+        float safeDistance = GetSafeDistance(currentPivot, backwards);
         if (safeDistance < currentDistance)
-        {
             currentDistance = safeDistance;
-        }
         else
-        {
-            float returnFactor = 1f - Mathf.Exp(-distanceReturnSpeed * dt);
+            currentDistance = Mathf.Lerp(currentDistance, safeDistance, 1f - Mathf.Exp(-distanceReturnSpeed * Time.deltaTime));
 
-            currentDistance = Mathf.Lerp(currentDistance, safeDistance, returnFactor);
-        }
+        transform.position = currentPivot + backwards * currentDistance;
+        transform.rotation = rotation;
 
-        // Apply camera position and rotation.
-        transform.position = currentPivot + cameraDirection * currentDistance;
-
-        transform.rotation = orbitRotation;
-
-        UpdateNearbyObstacleFade(dt);
+        UpdateFading();
     }
 
-    void HandleMouseInput()
-    {
-        float mouseX = Input.GetAxis("Mouse X");
-        float mouseY = Input.GetAxis("Mouse Y");
-
-        targetYaw += mouseX * mouseSensitivity;
-        targetPitch -= mouseY * mouseSensitivity;
-
-        targetPitch = Mathf.Clamp(targetPitch, minPitch, maxPitch);
-    }
-
-    float GetSafeCameraDistance(Vector3 pivot,Vector3 direction)
+    // How far back the camera can go before hitting something
+    float GetSafeDistance(Vector3 pivot, Vector3 direction)
     {
         float safeDistance = cameraDistance;
 
-        // SphereCast checks the camera's path
-        // instead of checking only a thin line.
-        RaycastHit[] hits = Physics.SphereCastAll(pivot, collisionRadius, direction, cameraDistance, obstructionMask, QueryTriggerInteraction.Ignore);
-
-        foreach (RaycastHit hit in hits)
+        // A sphere cast so the camera doesn't clip through the edges of walls
+        foreach (RaycastHit hit in Physics.SphereCastAll(pivot, collisionRadius, direction, cameraDistance, obstacleMask, QueryTriggerInteraction.Ignore))
         {
-            if (IsPlayerCollider(hit.collider))
+            if (IsPlayer(hit.collider))
                 continue;
 
-            float hitDistance = Mathf.Max(0.05f, hit.distance - collisionPadding);
-
-            safeDistance = Mathf.Min(safeDistance, hitDistance);
+            safeDistance = Mathf.Min(safeDistance, Mathf.Max(0.05f, hit.distance - collisionPadding));
         }
 
         return safeDistance;
     }
 
-    void UpdateNearbyObstacleFade(float dt)
+    // Fades out anything right next to the camera so it doesn't block the view
+    void UpdateFading()
     {
-        // Mark tracked obstacles as no longer near.
-        foreach (FadeInfo info in fadedRenderers.Values)
-            info.shouldFade = false;
+        foreach (FadedObject faded in fadedObjects.Values)
+            faded.targetAlpha = 1f;
 
-        // ONLY detect objects in a small radius
-        // surrounding the actual camera position.
-        Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, fadeDetectionRadius, obstructionMask, QueryTriggerInteraction.Ignore);
-
-        foreach (Collider col in nearbyColliders)
+        foreach (Collider col in Physics.OverlapSphere(transform.position, fadeDetectionRadius, fadeMask, QueryTriggerInteraction.Ignore))
         {
-            if (IsPlayerCollider(col))
+            if (IsPlayer(col))
                 continue;
 
-            MeshRenderer renderer = col.GetComponent<MeshRenderer>();
-
-            if (renderer == null)
-                renderer = col.GetComponentInParent<MeshRenderer>();
-
-            if (renderer == null)
+            MeshRenderer rend = col.GetComponentInParent<MeshRenderer>();
+            if (rend == null)
                 continue;
 
-            // Register newly encountered renderer.
-            if (!fadedRenderers.TryGetValue(renderer, out FadeInfo info))
+            if (!fadedObjects.TryGetValue(rend, out FadedObject faded))
             {
-                info = new FadeInfo();
-                info.renderer = renderer;
-
-                Material[] materials = renderer.materials;
-
-                info.originalColors = new Color[materials.Length];
-
-                for (int i = 0; i < materials.Length; i++)
-                {
-                    if (materials[i].HasProperty("_Color"))
-                    {
-                        info.originalColors[i] = materials[i].color;
-                    }
-                    else
-                    {
-                        info.originalColors[i] = Color.white;
-                    }
-                }
-
-                fadedRenderers.Add(renderer, info);
+                faded = StartFading(rend);
+                fadedObjects.Add(rend, faded);
             }
 
-            info.shouldFade = true;
+            // The closer it is, the more see-through it gets
+            float distance = Vector3.Distance(transform.position, col.ClosestPoint(transform.position));
+            float closeness = Mathf.InverseLerp(fadeDetectionRadius * 0.4f, fadeDetectionRadius, distance);
+            faded.targetAlpha = Mathf.Lerp(fadedAlpha, 1f, closeness);
         }
 
-        cleanup.Clear();
+        finishedFading.Clear();
 
-        foreach (var pair in fadedRenderers)
+        foreach (var pair in fadedObjects)
         {
-            FadeInfo info = pair.Value;
+            FadedObject faded = pair.Value;
 
-            if (info.renderer == null)
+            if (pair.Key == null)
             {
-                cleanup.Add(pair.Key);
+                finishedFading.Add(pair.Key);
                 continue;
             }
 
-            float desiredAlpha = info.shouldFade ? fadedAlpha : 1f;
+            faded.alpha = Mathf.MoveTowards(faded.alpha, faded.targetAlpha, fadeSpeed * Time.deltaTime);
+            SetAlpha(faded, faded.alpha);
 
-            info.alpha = Mathf.MoveTowards( info.alpha, desiredAlpha, fadeSpeed * dt);
-
-            Material[] materials = info.renderer.materials;
-
-            for (int i = 0; i < materials.Length && i < info.originalColors.Length; i++)
-            {
-                if (!materials[i].HasProperty("_Color"))
-                    continue;
-
-                Color color = info.originalColors[i];
-
-                color.a *= info.alpha;
-
-                materials[i].color = color;
-            }
-
-            if (!info.shouldFade && Mathf.Approximately(info.alpha, 1f))
-            {
-                RestoreRenderer(info);
-                cleanup.Add(pair.Key);
-            }
+            // Back to fully visible and not near the camera any more
+            if (faded.targetAlpha >= 1f && Mathf.Approximately(faded.alpha, 1f))
+                finishedFading.Add(pair.Key);
         }
 
-        foreach (MeshRenderer renderer in cleanup)
-            fadedRenderers.Remove(renderer);
+        foreach (Renderer rend in finishedFading)
+            fadedObjects.Remove(rend);
     }
 
-    bool IsPlayerCollider(Collider col)
+    FadedObject StartFading(Renderer rend)
     {
-        if (target == null || col == null)
-            return false;
+        FadedObject faded = new FadedObject();
+        faded.materials = rend.materials;
+        faded.originalColours = new Color[faded.materials.Length];
 
-        return col.transform.root == target.root;
-    }
-
-    void RestoreRenderer(FadeInfo info)
-    {
-        if (info.renderer == null)
-            return;
-
-        Material[] materials = info.renderer.materials;
-
-        for (int i = 0; i < materials.Length && i < info.originalColors.Length; i++)
+        for (int i = 0; i < faded.materials.Length; i++)
         {
-            if (materials[i].HasProperty("_Color"))
-            {
-                materials[i].color = info.originalColors[i];
-            }
+            if (faded.materials[i].HasProperty("_Color"))
+                faded.originalColours[i] = faded.materials[i].color;
+        }
+
+        return faded;
+    }
+
+    void SetAlpha(FadedObject faded, float alpha)
+    {
+        for (int i = 0; i < faded.materials.Length; i++)
+        {
+            if (!faded.materials[i].HasProperty("_Color"))
+                continue;
+
+            Color colour = faded.originalColours[i];
+            colour.a *= alpha;
+            faded.materials[i].color = colour;
         }
     }
 
-    void RestoreAllMaterials()
+    void RestoreAll()
     {
-        foreach (FadeInfo info in fadedRenderers.Values)
-            RestoreRenderer(info);
+        foreach (var pair in fadedObjects)
+        {
+            if (pair.Key != null)
+                SetAlpha(pair.Value, 1f);
+        }
 
-        fadedRenderers.Clear();
+        fadedObjects.Clear();
+    }
+
+    bool IsPlayer(Collider col)
+    {
+        return target != null && col.transform.root == target.root;
     }
 
     void OnDisable()
     {
-        RestoreAllMaterials();
+        RestoreAll();
     }
 
     void LockCursor()
@@ -341,13 +274,11 @@ public class CameraController : MonoBehaviour
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
-
         Gizmos.DrawWireSphere(transform.position, fadeDetectionRadius);
 
         if (target != null)
         {
             Gizmos.color = Color.yellow;
-
             Gizmos.DrawWireSphere(target.position + offset, 0.1f);
         }
     }

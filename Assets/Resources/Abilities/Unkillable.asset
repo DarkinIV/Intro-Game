@@ -9,11 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 1c1830bb738a42e3aab12bc229b4b1eb, type: 3}
   m_Name: Unkillable
-  m_EditorClassIdentifier: Assembly-CSharp::UltimateAbilityData
+  m_EditorClassIdentifier: Assembly-CSharp::UnkillableData
   abilityName: Unkillable
-  icon: {fileID: 0}
-  cooldown: 15
+  icon: {fileID: 21300000, guid: 18e814e5172ef4f7c94dcade1d2cdc72, type: 3}
+  cooldown: 0
   description: Defy death
   damageRequiredForFullCharge: 500
+  duration: 8

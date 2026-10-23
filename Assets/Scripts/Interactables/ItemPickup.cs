@@ -1,5 +1,6 @@
 using UnityEngine;
 
+// An item lying in the world. Interacting puts it in the inventory.
 public class ItemPickup : Interactable
 {
     public Item item;
@@ -7,20 +8,15 @@ public class ItemPickup : Interactable
 
     public override void Interact()
     {
-        PickUp();
-    }
-
-    void PickUp()
-    {
-        if (item == null)
+        int pickedUp = Inventory.instance.Add(item, quantity);
+        if (pickedUp == 0)
             return;
 
-        bool wasPickedUp = Inventory.instance.Add(item, Mathf.Max(1, quantity));
+        Debug.Log("Picked up " + item.name + " x" + pickedUp);
+        quantity -= pickedUp;
 
-        if (wasPickedUp)
-        {
-            Debug.Log("Picked up " + item.name + " x" + Mathf.Max(1, quantity));
+        // If the inventory was too full for all of them, the rest stay on the ground
+        if (quantity <= 0)
             Destroy(gameObject);
-        }
     }
 }

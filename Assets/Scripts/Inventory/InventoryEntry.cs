@@ -1,5 +1,6 @@
 using System;
 
+// One slot in the inventory: which item and how many
 [Serializable]
 public class InventoryEntry
 {
@@ -12,7 +13,5 @@ public class InventoryEntry
         this.quantity = quantity;
     }
 
-    public bool IsEmpty => item == null || quantity <= 0;
-    public int MaxStack => item == null ? 1 : item.maxStack;
-    public bool IsFull => quantity >= MaxStack;
+    public bool IsFull => quantity >= item.maxStack;
 }

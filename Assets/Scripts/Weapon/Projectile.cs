@@ -1,13 +1,13 @@
 using UnityEngine;
 
+// Fired by ranged weapons. Flies straight, or turns towards the target if the weapon is set to homing.
 [RequireComponent(typeof(Collider))]
 public class Projectile : MonoBehaviour
 {
     CharacterCombat owner;
     Transform target;
-    WeaponItem.ProjectileMode mode;
-    float speed;
-    float turnSpeed;
+    Collider targetCollider;
+    WeaponItem weapon;
     float expireAt;
 
     void Awake()
@@ -15,16 +15,15 @@ public class Projectile : MonoBehaviour
         GetComponent<Collider>().isTrigger = true;
     }
 
-    public void Launch(CharacterCombat shooter, Transform targetTransform, WeaponItem.ProjectileMode flightMode, Vector3 direction, float projectileSpeed, float lifetime, float trackingSpeed)
+    public void Launch(CharacterCombat shooter, Transform lockTarget, WeaponItem firedFrom)
     {
         owner = shooter;
-        target = targetTransform;
-        mode = flightMode;
-        speed = projectileSpeed;
-        turnSpeed = trackingSpeed;
-        expireAt = Time.time + lifetime;
-        if (direction.sqrMagnitude > 0.001f)
-            transform.rotation = Quaternion.LookRotation(direction);
+        target = lockTarget;
+        weapon = firedFrom;
+        expireAt = Time.time + weapon.projectileLifetime;
+
+        if (target != null)
+            targetCollider = target.GetComponentInChildren<Collider>();
     }
 
     void FixedUpdate()
@@ -35,37 +34,40 @@ public class Projectile : MonoBehaviour
             return;
         }
 
-        if (mode == WeaponItem.ProjectileMode.Homing && target != null)
+        if (weapon.projectileMode == WeaponItem.ProjectileMode.Homing && target != null)
         {
-            Collider targetCollider = target.GetComponentInChildren<Collider>();
-
-            Vector3 targetPosition = targetCollider != null ? targetCollider.bounds.center : target.position + Vector3.up;
-
-            Vector3 direction = targetPosition - transform.position;
-            if (direction.sqrMagnitude > 0.001f)
-            {
-                Quaternion wanted = Quaternion.LookRotation(direction);
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, wanted, turnSpeed * Time.fixedDeltaTime);
-            }
+            // Aim for the middle of their body
+            Vector3 aimPoint = targetCollider != null ? targetCollider.bounds.center : target.position + Vector3.up;
+            Quaternion wanted = Quaternion.LookRotation(aimPoint - transform.position);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, wanted, weapon.projectileTurnSpeed * Time.fixedDeltaTime);
         }
 
-        transform.position += transform.forward * (speed * Time.fixedDeltaTime);
+        transform.position += transform.forward * weapon.projectileSpeed * Time.fixedDeltaTime;
     }
 
     void OnTriggerEnter(Collider other)
     {
-        if (owner == null || other.transform.root == owner.transform.root) 
+        if (owner == null || other.transform.root == owner.transform.root)
             return;
-        
+
+        Shield shield = other.GetComponent<Shield>();
+        if (shield != null && owner.IsValidTarget(shield.Owner))
+        {
+            shield.Block(owner);
+            Destroy(gameObject);
+            return;
+        }
+
         CharacterStats victim = other.GetComponentInParent<CharacterStats>();
-        
         if (victim != null)
         {
-            if (!owner.CanDamage(victim)) 
+            // Fly straight through anyone we can't hurt (teammates, someone dodging)
+            if (!owner.CanDamage(victim))
                 return;
-            
+
             owner.DealDamage(victim);
         }
+
         Destroy(gameObject);
     }
 }

@@ -1,4 +1,4 @@
 using UnityEngine;
 
-// Attach this marker to the firing point of a bow/staff/weapon prefab.
+// Put this on the point of a ranged weapon where the projectiles should come out
 public class WeaponMuzzle : MonoBehaviour { }

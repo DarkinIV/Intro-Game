@@ -1,21 +1,16 @@
-
 using UnityEngine;
 using UnityEngine.AI;
 
+// Simple enemy AI: stand around, chase the player when they get close, attack when in range.
+// Can be stunned (whip pull, parry) and moved around by the whip.
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(CharacterStats))]
 [RequireComponent(typeof(EnemyCombat))]
 public class EnemyController : MonoBehaviour
 {
-    public enum State
-    {
-        Idle,
-        Chase,
-        Attack,
-        Dead
-    }
+    public enum State { Idle, Chase, Attack, Stunned }
 
-    public State CurrentState { get; private set; }
+    public State currentState;   // just so you can see what it's doing in the inspector
 
     [Header("Detection")]
     [SerializeField] float detectionRadius = 10f;
@@ -28,17 +23,22 @@ public class EnemyController : MonoBehaviour
     [SerializeField] float attackRange = 1.8f;
     [SerializeField] float rotationSpeed = 10f;
 
+    [Header("Weight")]
+    [Tooltip("Heavy enemies can't be pulled by the whip, the Acrobat flies to them instead")]
+    [SerializeField] bool isHeavy;
+
+    [Header("UI")]
+    [Tooltip("Where the health bar and stunned icon go, above the head")]
+    [SerializeField] Transform uiAnchor;
+
     NavMeshAgent agent;
     CharacterStats stats;
     EnemyCombat combat;
+    Transform target;
+    float stunnedUntil;
 
-    public Transform target;
-
-    public bool IsMoving =>
-        agent != null &&
-        agent.enabled &&
-        agent.isOnNavMesh &&
-        agent.velocity.sqrMagnitude > 0.01f;
+    public bool IsHeavy => isHeavy;
+    public bool IsStunned => Time.time < stunnedUntil;
 
     void Awake()
     {
@@ -50,28 +50,24 @@ public class EnemyController : MonoBehaviour
     void Start()
     {
         agent.speed = stats.GetMoveSpeed();
+        agent.stoppingDistance = stoppingDistance;
 
-        // Disable automatic rotation so we can
-        // control facing during combat.
+        // We turn the enemy ourselves so it can face the player while attacking
         agent.updateRotation = false;
 
         stats.OnHealthReachedZero += Die;
-    }
 
-    void OnDestroy()
-    {
-        if (stats != null)
-            stats.OnHealthReachedZero -= Die;
+        EnemyUIManager.instance.Create(this, uiAnchor);
     }
 
     void Update()
     {
-        if (CurrentState == State.Dead)
+        if (stats.IsDead)
             return;
 
-        if (stats.IsDead)
+        if (IsStunned)
         {
-            Die();
+            currentState = State.Stunned;
             return;
         }
 
@@ -83,23 +79,16 @@ public class EnemyController : MonoBehaviour
             return;
         }
 
-        // Horizontal distance between enemy and player.
-        Vector3 direction = target.position - transform.position;
-        direction.y = 0f;
+        Vector3 toTarget = target.position - transform.position;
+        toTarget.y = 0f;
 
-        float distance = direction.magnitude;
-
-        // Attack when within range.
-        if (distance <= attackRange)
-        {
-            Attack(direction);
-        }
+        if (toTarget.magnitude <= attackRange)
+            Attack(toTarget);
         else
-        {
-            Chase(direction);
-        }
+            Chase(toTarget);
     }
 
+    // Notice the player when they come close, and give up once they're far enough away
     void UpdateTarget()
     {
         if (Player.instance == null)
@@ -109,118 +98,96 @@ public class EnemyController : MonoBehaviour
         }
 
         Transform player = Player.instance.transform;
-
-        float distance = Vector3.Distance(
-            transform.position,
-            player.position
-        );
+        float distance = Vector3.Distance(transform.position, player.position);
 
         if (target == null && distance <= detectionRadius)
-        {
             target = player;
-        }
-
-        if (target != null && distance > loseTargetRadius)
-        {
+        else if (target != null && distance > loseTargetRadius)
             target = null;
-        }
     }
 
     void Idle()
     {
-        CurrentState = State.Idle;
-
-        if (agent.enabled && agent.isOnNavMesh)
-        {
-            agent.isStopped = true;
-            agent.ResetPath();
-        }
+        currentState = State.Idle;
+        StopMoving();
     }
 
-    void Chase(Vector3 direction)
+    void Chase(Vector3 toTarget)
     {
-        CurrentState = State.Chase;
+        currentState = State.Chase;
 
         if (!agent.enabled || !agent.isOnNavMesh)
             return;
 
         agent.isStopped = false;
-        agent.stoppingDistance = stoppingDistance;
         agent.SetDestination(target.position);
 
-        RotateTowards(direction);
+        TurnTowards(toTarget);
     }
 
-    void Attack(Vector3 direction)
+    void Attack(Vector3 toTarget)
     {
-        CurrentState = State.Attack;
+        currentState = State.Attack;
+        StopMoving();
+        TurnTowards(toTarget);
 
+        combat.Target = target;
+        combat.TryAttack();
+    }
+
+    void StopMoving()
+    {
         if (agent.enabled && agent.isOnNavMesh)
         {
             agent.isStopped = true;
             agent.ResetPath();
         }
-
-        // Turn toward player before attacking.
-        RotateTowards(direction);
-
-        if (combat != null)
-        {
-            combat.Target = target;
-            combat.TryAttack();
-        }
     }
 
-    void RotateTowards(Vector3 direction)
+    void TurnTowards(Vector3 direction)
     {
         if (direction.sqrMagnitude < 0.001f)
             return;
 
-        Quaternion desiredRotation =
-            Quaternion.LookRotation(direction);
+        Quaternion rotation = Quaternion.LookRotation(direction);
+        transform.rotation = Quaternion.Slerp(transform.rotation, rotation, rotationSpeed * Time.deltaTime);
+    }
 
-        transform.rotation = Quaternion.Slerp(
-            transform.rotation,
-            desiredRotation,
-            rotationSpeed * Time.deltaTime
-        );
+    // Stops the enemy and cancels its attack (whip pull, parry)
+    public void Stun(float duration)
+    {
+        if (stats.IsDead)
+            return;
+
+        stunnedUntil = Mathf.Max(stunnedUntil, Time.time + duration);
+        currentState = State.Stunned;
+        combat.CancelAttack();
+        StopMoving();
+    }
+
+    // Moves the enemy along the NavMesh so it doesn't get pulled through walls (whip pull)
+    public void Displace(Vector3 offset)
+    {
+        if (agent.enabled && agent.isOnNavMesh)
+            agent.Move(offset);
+        else
+            transform.position += offset;
     }
 
     void Die()
     {
-        if (CurrentState == State.Dead)
-            return;
-
-        CurrentState = State.Dead;
-        target = null;
-
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
-        {
-            agent.isStopped = true;
-            agent.ResetPath();
-        }
-
         Destroy(gameObject);
     }
 
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(
-            transform.position,
-            detectionRadius
-        );
+        Gizmos.DrawWireSphere(transform.position, detectionRadius);
 
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(
-            transform.position,
-            loseTargetRadius
-        );
+        Gizmos.DrawWireSphere(transform.position, loseTargetRadius);
 
         Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(
-            transform.position,
-            attackRange
-        );
+        Gizmos.DrawWireSphere(transform.position, attackRange);
     }
 }

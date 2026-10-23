@@ -1,79 +1,65 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// The player's inventory. Each entry in the list is one slot, and stackable items share a slot up to maxStack.
 public class Inventory : MonoBehaviour
 {
-    #region Singleton
-
     public static Inventory instance;
+
+    public System.Action onItemChangedCallback;
+
+    public int space = 10;   // number of slots
+    public List<InventoryEntry> items = new List<InventoryEntry>();
 
     void Awake()
     {
         instance = this;
     }
 
-    #endregion
-
-    public delegate void OnItemChanged();
-    public OnItemChanged onItemChangedCallback;
-
-    public int space = 10;  // Amount of item spaces
-
-    // Each entry is one occupied inventory slot.
-    public List<InventoryEntry> items = new List<InventoryEntry>();
-
-        // Add a new item if enough room
-        public bool Add(Item item, int amount = 1)
+    // Adds as many as will fit and returns how many actually went in
+    public int Add(Item item, int amount = 1)
     {
-        if (item == null || amount <= 0)
-            return false;
-
-        if (!item.showInInventory)
-            return false;
+        if (item == null || amount <= 0 || !item.showInInventory)
+            return 0;
 
         int remaining = amount;
 
+        // Top up stacks we already have first
         if (item.isStackable)
         {
-            for (int i = 0; i < items.Count && remaining > 0; i++)
+            foreach (InventoryEntry entry in items)
             {
-                InventoryEntry entry = items[i];
+                if (remaining <= 0)
+                    break;
 
                 if (entry.item != item || entry.IsFull)
                     continue;
 
-                int freeSpace = Mathf.Max(0, item.maxStack - entry.quantity);
-                int toAdd = Mathf.Min(freeSpace, remaining);
+                int toAdd = Mathf.Min(item.maxStack - entry.quantity, remaining);
                 entry.quantity += toAdd;
                 remaining -= toAdd;
             }
         }
 
-        while (remaining > 0)
+        // Then use empty slots for whatever is left
+        while (remaining > 0 && items.Count < space)
         {
-            if (items.Count >= space)
-            {
-                Debug.Log("Not enough room.");
-                if (remaining != amount)
-                    NotifyInventoryChanged();
-
-                return false;
-            }
-
-            int stackAmount = item.isStackable
-                ? Mathf.Min(item.maxStack, remaining)
-                : 1;
-
+            int stackAmount = item.isStackable ? Mathf.Min(item.maxStack, remaining) : 1;
             items.Add(new InventoryEntry(item, stackAmount));
             remaining -= stackAmount;
         }
 
-        NotifyInventoryChanged();
+        if (remaining > 0)
+            Debug.Log("Not enough room.");
 
-        return true;
+        int added = amount - remaining;
+        if (added > 0)
+            onItemChangedCallback?.Invoke();
+
+        return added;
     }
 
-    // Remove an item
+    // Returns true if all of them were removed
     public bool Remove(Item item, int amount = 1)
     {
         if (item == null || amount <= 0)
@@ -81,10 +67,10 @@ public class Inventory : MonoBehaviour
 
         int remaining = amount;
 
+        // Go backwards so removing empty slots doesn't mess up the loop
         for (int i = items.Count - 1; i >= 0 && remaining > 0; i--)
         {
             InventoryEntry entry = items[i];
-
             if (entry.item != item)
                 continue;
 
@@ -96,68 +82,22 @@ public class Inventory : MonoBehaviour
                 items.RemoveAt(i);
         }
 
-        bool removedAny = remaining < amount;
-
-        if (removedAny)
-            NotifyInventoryChanged();
+        if (remaining < amount)
+            onItemChangedCallback?.Invoke();
 
         return remaining == 0;
     }
 
-    public bool HasItem(Item item, int amount = 1)
-    {
-        return GetItemCount(item) >= amount;
-    }
-
     public int GetItemCount(Item item)
     {
-        if (item == null)
-            return 0;
-
         int count = 0;
 
-        for (int i = 0; i < items.Count; i++)
+        foreach (InventoryEntry entry in items)
         {
-            InventoryEntry entry = items[i];
             if (entry.item == item)
                 count += entry.quantity;
         }
 
         return count;
-    }
-
-    public bool CanAdd(Item item, int amount = 1)
-    {
-        if (item == null || amount <= 0 || !item.showInInventory)
-            return false;
-
-        int remaining = amount;
-
-        if (item.isStackable)
-        {
-            for (int i = 0; i < items.Count && remaining > 0; i++)
-            {
-                InventoryEntry entry = items[i];
-
-                if (entry.item != item || entry.IsFull)
-                    continue;
-
-                remaining -= Mathf.Max(0, item.maxStack - entry.quantity);
-            }
-        }
-
-        if (remaining <= 0)
-            return true;
-
-        int freeSlots = Mathf.Max(0, space - items.Count);
-        int perSlotCapacity = item.isStackable ? item.maxStack : 1;
-        int slotsNeeded = Mathf.CeilToInt(remaining / (float)perSlotCapacity);
-
-        return freeSlots >= slotsNeeded;
-    }
-
-    void NotifyInventoryChanged()
-    {
-        onItemChangedCallback?.Invoke();
     }
 }
