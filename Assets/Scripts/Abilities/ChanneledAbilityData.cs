@@ -1,3 +1,4 @@
+// AI use: Whole script written by Claude
 using UnityEngine;
 
 // Settings shared by held abilities (Crystal Sight, Meditate)

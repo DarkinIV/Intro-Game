@@ -1,3 +1,6 @@
+// AI use: Whole script written by Claude (Anthropic).
+// Owner: (add name)
+
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

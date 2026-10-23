@@ -1,3 +1,5 @@
+// AI use: simplified the code and calculations
+
 using UnityEngine;
 
 // Health, stamina and the other stats. Used by the player and the enemies.

@@ -1,3 +1,6 @@
+// AI use: Helped with writing the jump, slide, and wall climb and some simplification.
+// Owner: (add name)
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;

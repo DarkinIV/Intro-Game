@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿// AI use: Whole script written by Claude (Anthropic).
+// Owner: (add name)
+
+using UnityEngine;
 
 // Creates the UI that floats above each enemy (health bar and stunned icon).
 // Any new enemy UI can be added here as another prefab.

@@ -1,3 +1,6 @@
+// AI use: Whole script written by Claude (Anthropic).
+// Owner: (add name)
+
 using UnityEngine;
 
 // Base for UI that floats above a character (health bar, stunned icon).

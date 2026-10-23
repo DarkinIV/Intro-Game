@@ -1,3 +1,6 @@
+// AI use: Claude rewrote the held ability (meter)
+// Owner: (add name)
+
 using UnityEngine;
 
 // The in-game version of an ability. AbilityData has the settings, this keeps track of the cooldown.

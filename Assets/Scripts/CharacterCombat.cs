@@ -1,3 +1,6 @@
+// AI use: Claude added target checks, ability and area damage, and simplified the rest.
+// Owner: (add name)
+
 using System.Collections.Generic;
 using UnityEngine;
 
