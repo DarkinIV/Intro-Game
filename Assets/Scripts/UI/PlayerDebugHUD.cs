@@ -1,3 +1,6 @@
+// AI use: Whole script written by Claude (Anthropic).
+// Owner: (add name)
+
 using UnityEngine;
 
 // Debug text in the top right for testing movement and abilities. Untick "show" to hide it.

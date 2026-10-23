@@ -1,3 +1,6 @@
+// AI use: Simplified by Claude (Anthropic).
+// Owner: (add name)
+
 using UnityEngine;
 
 // Spawns the weapon a character is holding and keeps track of its hitbox and muzzle.

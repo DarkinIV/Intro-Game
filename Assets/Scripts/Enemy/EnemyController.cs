@@ -1,3 +1,4 @@
+// AI use: Claude added stun and simplified the rest
 using UnityEngine;
 using UnityEngine.AI;
 

@@ -1,3 +1,4 @@
+// AI use: Rewritten by Claude to be simpler
 using TMPro;
 using UnityEngine;
 

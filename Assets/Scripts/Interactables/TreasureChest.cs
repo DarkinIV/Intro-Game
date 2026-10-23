@@ -1,3 +1,5 @@
+// AI use: loot that doesn't fit stays in the chest
+
 using System.Collections;
 using UnityEngine;
 

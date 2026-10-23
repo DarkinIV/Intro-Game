@@ -1,3 +1,5 @@
+// AI use: Restructured by Claude, mainly the obstacle fading.
+
 using System.Collections.Generic;
 using UnityEngine;
 
