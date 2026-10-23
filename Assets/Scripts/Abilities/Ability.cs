@@ -1,60 +1,116 @@
 using UnityEngine;
 
+// The in-game version of an ability. AbilityData has the settings, this keeps track of the cooldown.
 public abstract class Ability
 {
     public AbilityData Data { get; }
-    protected float nextReadyTime;
+    public KeyCode Key { get; set; }
 
-    protected Ability(AbilityData data) { Data = data; nextReadyTime = -999f; }
+    protected float readyTime;
 
-    public bool IsReady => Time.time >= nextReadyTime;
-    public float CooldownRemaining => Mathf.Max(0f, nextReadyTime - Time.time);
-
-    public bool TryUse(PlayerStats stats, PlayerController ctrl, PlayerCombat combat)
+    protected Ability(AbilityData data)
     {
-        if (!CanUseInternal(stats)) return false;
-        ExecuteInternal(stats, ctrl, combat);
-        nextReadyTime = Time.time + Data.cooldown;
-        return true;
+        Data = data;
     }
 
-    protected virtual bool CanUseInternal(PlayerStats stats) => IsReady;
-    protected abstract void ExecuteInternal(PlayerStats stats, PlayerController ctrl, PlayerCombat combat);
+    public bool IsReady => Time.time >= readyTime;
+    public float CooldownRemaining => Mathf.Max(0f, readyTime - Time.time);
+
+    public void TryUse(PlayerController player)
+    {
+        if (!CanUse())
+            return;
+
+        // Only start the cooldown if the ability actually did something
+        if (Activate(player))
+            readyTime = Time.time + Data.cooldown;
+    }
+
+    protected virtual bool CanUse() => IsReady;
+    protected abstract bool Activate(PlayerController player);
 }
 
+// A normal press ability. The character's controller decides what it does.
 public class BasicAbility : Ability
 {
     public BasicAbility(BasicAbilityData data) : base(data) { }
-    protected override void ExecuteInternal(PlayerStats s, PlayerController c, PlayerCombat cb)
-    {
-        // Hook point: subclass / implement logic (dash strike, projectile etc.)
-    }
+
+    protected override bool Activate(PlayerController player) => player.UseAbility(this);
 }
 
+// A held ability (Crystal Sight, Meditate). The meter goes down while the key is held
+// and when it runs out the ability goes on cooldown.
+public class ChanneledAbility : Ability
+{
+    public float Meter { get; private set; } = 1f;
+
+    ChanneledAbilityData channelData;
+
+    public ChanneledAbility(ChanneledAbilityData data) : base(data)
+    {
+        channelData = data;
+    }
+
+    // Called every frame. Returns true while the ability is running.
+    public bool Tick(bool held)
+    {
+        if (!IsReady)
+            return false;
+
+        // Cooldown just finished so fill the meter back up
+        if (Meter <= 0f)
+            Meter = 1f;
+
+        if (!held)
+        {
+            if (channelData.refillTime > 0f)
+                Meter = Mathf.Min(1f, Meter + Time.deltaTime / channelData.refillTime);
+
+            return false;
+        }
+
+        Meter -= Time.deltaTime / channelData.channelTime;
+
+        if (Meter <= 0f)
+        {
+            Meter = 0f;
+            readyTime = Time.time + Data.cooldown;
+        }
+
+        return true;
+    }
+
+    // Held abilities are never pressed
+    protected override bool Activate(PlayerController player) => false;
+}
+
+// The ultimate (R). It has to be charged up by dealing damage before it can be used.
 public class UltimateAbility : Ability
 {
-    public new UltimateAbilityData Data => (UltimateAbilityData)base.Data;
     public int CurrentCharge { get; private set; }
-    public float ChargePercent => Mathf.Clamp01(CurrentCharge / (float)Data.damageRequiredForFullCharge);
 
-    public UltimateAbility(UltimateAbilityData data) : base(data) { }
+    int chargeNeeded;
 
-    public void AddCharge(int rawDamageDealt, float chargeRateMultiplier = 1f)
+    public UltimateAbility(UltimateAbilityData data) : base(data)
     {
-        CurrentCharge = Mathf.Min(
-            Data.damageRequiredForFullCharge,
-            CurrentCharge + Mathf.RoundToInt(rawDamageDealt * chargeRateMultiplier)
-        );
+        chargeNeeded = data.damageRequiredForFullCharge;
     }
 
-    protected override bool CanUseInternal(PlayerStats stats)
+    public float ChargePercent => Mathf.Clamp01(CurrentCharge / (float)chargeNeeded);
+
+    public void AddCharge(int damageDealt)
     {
-        return base.CanUseInternal(stats) && CurrentCharge >= Data.damageRequiredForFullCharge;
+        CurrentCharge = Mathf.Min(chargeNeeded, CurrentCharge + damageDealt);
     }
 
-    protected override void ExecuteInternal(PlayerStats s, PlayerController c, PlayerCombat cb)
+    protected override bool CanUse() => IsReady && CurrentCharge >= chargeNeeded;
+
+    protected override bool Activate(PlayerController player)
     {
+        if (!player.UseUltimate(this))
+            return false;
+
         CurrentCharge = 0;
-        // Hook point: implement ultimate logic (AOE, burst, etc.)
+        return true;
     }
 }

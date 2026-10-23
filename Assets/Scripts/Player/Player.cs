@@ -1,9 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/*
-    Provides easy access to the Player and handles player death.
-*/
+// Lets other scripts find the player easily (Player.instance) and restarts the level when the player dies
 [RequireComponent(typeof(PlayerStats))]
 public class Player : MonoBehaviour
 {
@@ -14,29 +12,22 @@ public class Player : MonoBehaviour
     void Awake()
     {
         instance = this;
-
-        if (playerStats == null)
-            playerStats = GetComponent<PlayerStats>();
+        playerStats = GetComponent<PlayerStats>();
     }
-
 
     void Start()
     {
         playerStats.OnHealthReachedZero += Die;
     }
 
+    void OnDestroy()
+    {
+        playerStats.OnHealthReachedZero -= Die;
+    }
 
     void Die()
     {
         playerStats.ApplyDeathPenalty();
-
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-    }
-
-
-    void OnDestroy()
-    {
-        if (playerStats != null)
-            playerStats.OnHealthReachedZero -= Die;
     }
 }

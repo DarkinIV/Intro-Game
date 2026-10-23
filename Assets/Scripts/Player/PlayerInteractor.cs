@@ -1,13 +1,8 @@
 using UnityEngine;
 
-/*
-    Handles the player's world interactions.
-
-    Finds the closest interactable in range, highlights it,
-    controls the interaction UI and performs the interaction
-    when requested by PlayerController.
-*/
-public class PlayerInteract : MonoBehaviour
+// Finds the closest thing the player can interact with, highlights it and shows the [E] prompt.
+// PlayerController calls TryInteract when E is pressed.
+public class PlayerInteractor : MonoBehaviour
 {
     [Header("Interaction")]
     [SerializeField] LayerMask interactionMask;
@@ -18,63 +13,42 @@ public class PlayerInteract : MonoBehaviour
 
     void Update()
     {
-        UpdateInteractionTarget();
-    }
+        Interactable closest = FindClosestInteractable();
 
+        if (closest != currentInteractable)
+            SetInteractionTarget(closest);
+    }
 
     public void TryInteract()
     {
-        if (currentInteractable == null)
-            return;
-
-        currentInteractable.Interact();
+        if (currentInteractable != null)
+            currentInteractable.Interact();
     }
 
-
-    /*
-        Searches all nearby interactables and selects the nearest
-        one that is actually within its own interaction range.
-    */
-    void UpdateInteractionTarget()
+    Interactable FindClosestInteractable()
     {
-        Collider[] hits = Physics.OverlapSphere(
-            transform.position,
-            interactionSearchRadius,
-            interactionMask,
-            QueryTriggerInteraction.Collide
-        );
-
-        Interactable closestInteractable = null;
+        Interactable closest = null;
         float closestDistance = Mathf.Infinity;
 
-        foreach (Collider hit in hits)
+        foreach (Collider hit in Physics.OverlapSphere(transform.position, interactionSearchRadius, interactionMask, QueryTriggerInteraction.Collide))
         {
             Interactable interactable = hit.GetComponentInParent<Interactable>();
 
-            if (interactable == null)
-                continue;
-
-            if (!interactable.CanInteract(transform))
+            // Each interactable has its own range, so it might still be too far away
+            if (interactable == null || !interactable.CanInteract(transform))
                 continue;
 
             float distance = (interactable.InteractionPosition - transform.position).sqrMagnitude;
-
             if (distance < closestDistance)
             {
                 closestDistance = distance;
-                closestInteractable = interactable;
+                closest = interactable;
             }
         }
 
-        if (closestInteractable != currentInteractable)
-            SetInteractionTarget(closestInteractable);
+        return closest;
     }
 
-
-    /*
-        Turns off feedback for the previous target and enables
-        highlighting and UI feedback for the new one.
-    */
     void SetInteractionTarget(Interactable newInteractable)
     {
         if (currentHighlight != null)
@@ -83,26 +57,22 @@ public class PlayerInteract : MonoBehaviour
         currentInteractable = newInteractable;
         currentHighlight = null;
 
-        if (currentInteractable != null)
-        {
-            currentHighlight = currentInteractable.GetComponentInChildren<InteractableHighlight>();
-
-            if (currentHighlight != null)
-                currentHighlight.SetHighlighted(true);
-
-            UIManager.instance.ShowInteractionPrompt("[E] " + currentInteractable.InteractionPrompt);
-        }
-        else
+        if (currentInteractable == null)
         {
             UIManager.instance.HideInteractionPrompt();
+            return;
         }
-    }
 
+        currentHighlight = currentInteractable.GetComponentInChildren<InteractableHighlight>();
+        if (currentHighlight != null)
+            currentHighlight.SetHighlighted(true);
+
+        UIManager.instance.ShowInteractionPrompt("[E] " + currentInteractable.InteractionPrompt);
+    }
 
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
-
         Gizmos.DrawWireSphere(transform.position, interactionSearchRadius);
     }
 }

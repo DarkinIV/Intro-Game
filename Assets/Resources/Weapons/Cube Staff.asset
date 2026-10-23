@@ -25,8 +25,9 @@ MonoBehaviour:
   attackKind: 1
   comboLength: 3
   attackStaminaCost: 15
-  attackRateModifier: 2
+  attackRateModifier: 0
   bonusDamage: 2
+  attackMoveMultiplier: 0
   projectilePrefab: {fileID: 7638945631581436254, guid: 02cca85988e8feb4c9d7ea00f03d1596, type: 3}
   projectileMode: 1
   projectileSpeed: 12

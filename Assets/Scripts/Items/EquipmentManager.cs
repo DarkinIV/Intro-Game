@@ -1,62 +1,39 @@
 using UnityEngine;
 
+// Keeps track of what the player has equipped.
+// PlayerStats (for the stat bonuses) and WeaponInventory (for the model) listen for changes.
+// It runs early so it's ready before the player gets spawned.
+[DefaultExecutionOrder(-100)]
 public class EquipmentManager : MonoBehaviour
 {
-	public static EquipmentManager instance;
+    public static EquipmentManager instance;
 
-	Equipment currentWeapon;
+    public event System.Action<Equipment, Equipment> onEquipmentChanged;   // new item, old item
 
-	public delegate void OnEquipmentChanged(Equipment newItem, Equipment oldItem);
-	public event OnEquipmentChanged onEquipmentChanged;
+    public Equipment CurrentWeapon { get; private set; }
 
-	Inventory inventory;
+    void Awake()
+    {
+        instance = this;
+    }
 
-	void Awake()
-	{
-		instance = this;
-	}
+    // Returns false if the item couldn't be equipped
+    public bool Equip(Equipment newItem, bool returnOldToInventory = true)
+    {
+        if (newItem == null)
+            return false;
 
-	void Start()
-	{
-		inventory = Inventory.instance;
-	}
+        Equipment oldItem = CurrentWeapon;
 
-	public Equipment GetEquipment(EquipmentSlot slot)
-	{
-		return currentWeapon;
-	}
+        // The old weapon goes back in the inventory, but only if there's room
+        if (oldItem != null && returnOldToInventory && Inventory.instance.Add(oldItem) == 0)
+        {
+            Debug.Log("No room for " + oldItem.name + ", can't swap");
+            return false;
+        }
 
-	public void Equip(Equipment newItem, bool returnOldToInventory = true)
-	{
-		if (newItem == null)
-			return;
-
-		Equipment oldItem = currentWeapon;
-
-		if (oldItem != null && returnOldToInventory && inventory != null)
-		{
-			bool wasAdded = inventory.Add(oldItem);
-			if (!wasAdded)
-			{
-				Debug.LogWarning("Could not return " + oldItem.name + " to inventory before equipping " + newItem.name);
-			}
-		}
-
-		onEquipmentChanged?.Invoke(newItem, oldItem);
-
-		currentWeapon = newItem;
-		Debug.Log(newItem.name + " equipped!");
-	}
-
-	public void UnequipCurrent()
-	{
-		if (currentWeapon == null) return;
-
-		Equipment oldItem = currentWeapon;
-		if (inventory != null)
-			inventory.Add(oldItem);
-
-		currentWeapon = null;
-		onEquipmentChanged?.Invoke(null, oldItem);
-	}
+        CurrentWeapon = newItem;
+        onEquipmentChanged?.Invoke(newItem, oldItem);
+        return true;
+    }
 }

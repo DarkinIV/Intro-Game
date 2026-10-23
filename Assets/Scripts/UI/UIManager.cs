@@ -3,16 +3,11 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/*
-    Controls the main overlay HUD.
-
-    Displays player health, progression, resources,
-    ability cooldowns, interaction prompts and UI panels.
-*/
+// The main HUD: health, stamina and mana bars, level and experience, karma, potions,
+// the ability bar, the interaction prompt and the inventory panel.
 public class UIManager : MonoBehaviour
 {
     public static UIManager instance;
-
 
     [System.Serializable]
     public class CooldownDisplay
@@ -21,33 +16,14 @@ public class UIManager : MonoBehaviour
         public TMP_Text timerText;
     }
 
+    [Header("Player Bars")]
+    [SerializeField] ResourceBar healthBar;
+    [SerializeField] ResourceBar staminaBar;
+    [SerializeField] ResourceBar manaBar;       // hidden for characters without mana
 
-    [Header("Player Health")]
-    [SerializeField] Image healthFill;
-    [SerializeField] Image damageFill;
-    [SerializeField] TMP_Text healthText;
-    [SerializeField] RectTransform healthBarRoot;
-
-    [Header("Health Feedback")]
-    [SerializeField] float damageHoldTime = 0.2f;
-    [SerializeField] float damageDrainSpeed = 0.8f;
-    [SerializeField] float healFillDuration = 1f;
+    [Header("Health Shake")]
     [SerializeField] float shakeDuration = 0.12f;
     [SerializeField] float shakeStrength = 5f;
-
-    [Header("Player Stamina")]
-    [SerializeField] Image staminaFill;
-    [SerializeField] Image staminaDamageFill;
-    [SerializeField] TMP_Text staminaText;
-    [SerializeField] RectTransform staminaBarRoot;
-
-    [Header("Stamina Feedback")]
-    [SerializeField] float staminaHoldTime = 0.2f;
-    [SerializeField] float staminaDrainSpeed = 0.8f;
-
-    [Header("Bar Size")]
-    [SerializeField] float pixelsPerHealth = 2f;
-    [SerializeField] float pixelsPerStamina = 2f;
 
     [Header("Player Resources")]
     [SerializeField] TMP_Text potionText;
@@ -56,14 +32,14 @@ public class UIManager : MonoBehaviour
     [Header("Resource Feedback")]
     [SerializeField] float karmaCountMinDuration = 0.25f;
     [SerializeField] float karmaCountMaxDuration = 0.75f;
-    [SerializeField] int karmaDifferenceForMaxDuration = 100;
+    [SerializeField] int karmaDifferenceForMaxDuration = 100;   // gaining this much or more takes the max time
     [SerializeField] float karmaPunchScale = 1.12f;
     [SerializeField] float karmaPunchDuration = 0.18f;
 
     [Header("Player Progression")]
     [SerializeField] TMP_Text levelText;
     [SerializeField] Image experienceFill;
-    [SerializeField] TMP_Text experienceText;
+    [SerializeField] TMP_Text experienceText;   // optional
 
     [Header("Progression Feedback")]
     [SerializeField] float experienceFillDuration = 0.45f;
@@ -72,8 +48,9 @@ public class UIManager : MonoBehaviour
     [SerializeField] float levelPunchDuration = 0.22f;
 
     [Header("Abilities")]
-    [SerializeField] CooldownDisplay basicAttack;
-    [SerializeField] CooldownDisplay dash;
+    [SerializeField] CooldownDisplay dash;              // optional
+    [SerializeField] AbilitySlotUI abilitySlotPrefab;
+    [SerializeField] Transform abilitySlotParent;       // a slot gets spawned here for each ability
 
     [Header("Interaction")]
     [SerializeField] GameObject interactionPanel;
@@ -82,37 +59,28 @@ public class UIManager : MonoBehaviour
     [Header("Inventory")]
     [SerializeField] GameObject inventoryPanel;
 
-
-    public PlayerStats playerStats;
+    PlayerStats playerStats;
     PlayerController playerController;
+    Mana playerMana;
 
-    Coroutine damageDrainRoutine;
-    Coroutine healFillRoutine;
     Coroutine shakeRoutine;
-    Coroutine staminaDamageDrainRoutine;
     Coroutine experienceRoutine;
     Coroutine karmaRoutine;
     Coroutine karmaPunchRoutine;
     Coroutine levelPunchRoutine;
 
     Vector2 healthBarStartPosition;
-    Vector2 staminaBarStartPosition;
-    int lastActualHealth = -1;
-    float lastActualStamina = -1;
-
-    bool initialising = true;
-
     int displayedExperience;
     int displayedKarma;
-    int lastDisplayedLevel = -1;
-    int pendingLevelWraps;
+    int displayedLevel;
+    int levelsGained;   // level ups the experience bar still has to show
 
+    RectTransform HealthBarRect => (RectTransform)healthBar.transform;
 
     void Awake()
     {
         instance = this;
     }
-
 
     void Start()
     {
@@ -129,590 +97,37 @@ public class UIManager : MonoBehaviour
         playerStats.OnKarmaChanged += UpdateKarma;
 
         UpdatePlayerHealth(playerStats.currentHealth, playerStats.maxHealth.Value);
-
         UpdatePlayerStamina(playerStats.currentStamina, playerStats.maxStamina.Value);
+        healthBarStartPosition = HealthBarRect.anchoredPosition;
 
-        if (damageFill != null && healthFill != null)
-            damageFill.fillAmount = healthFill.fillAmount;
+        // Only characters with mana get a mana bar
+        playerMana = Player.instance.GetComponent<Mana>();
+        manaBar.gameObject.SetActive(playerMana != null);
 
-        if (staminaDamageFill != null && staminaFill != null)
-            staminaDamageFill.fillAmount = staminaFill.fillAmount;
+        if (playerMana != null)
+        {
+            playerMana.OnManaChanged += UpdatePlayerMana;
+            playerMana.OnManaSpent += OnPlayerManaSpent;
+            UpdatePlayerMana(playerMana.Current, playerMana.Max);
+        }
 
-        if (healthBarRoot != null)
-            healthBarStartPosition = healthBarRoot.anchoredPosition;
-
-        if (staminaBarRoot != null)
-            staminaBarStartPosition = staminaBarRoot.anchoredPosition;
-
+        // Set everything straight away at the start, without the animations
         UpdatePotions(playerStats.CurrentHealthPotions, playerStats.MaxHealthPotions);
 
-        UpdateExperience(playerStats.CurrentExperience, playerStats.ExperienceToNextLevel);
+        displayedLevel = playerStats.CurrentLevel;
+        levelText.text = displayedLevel.ToString();
 
-        UpdateLevel(playerStats.CurrentLevel);
-        UpdateKarma(playerStats.Karma);
+        displayedExperience = playerStats.CurrentExperience;
+        SetExperienceBar(displayedExperience, playerStats.ExperienceToNextLevel);
 
-        initialising = false;
+        displayedKarma = playerStats.Karma;
+        karmaText.text = displayedKarma.ToString();
 
         HideInteractionPrompt();
+        inventoryPanel.SetActive(false);
 
-        if (inventoryPanel != null)
-            inventoryPanel.SetActive(false);
-
-        UpdateCooldownDisplay(basicAttack, 0f, 1f);
-        UpdateCooldownDisplay(dash, 0f, 1f);
+        CreateAbilitySlots();
     }
-
-
-    void Update()
-    {
-        //UpdateCooldownDisplay(basicAttack, playerCombat.AttackCooldownRemaining, playerCombat.AttackCooldownDuration);
-
-        UpdateCooldownDisplay(dash, playerController.DashCooldownRemaining, playerController.DashCooldownDuration);
-
-        if (Input.GetKeyDown(KeyCode.I))
-            ToggleInventory();
-    }
-
-
-    void UpdatePlayerHealth(int currentHealth, int maxHealth)
-    {
-        UpdateHealthBarWidth(maxHealth);
-        float targetPercent = maxHealth > 0 ? Mathf.Clamp01(currentHealth / (float)maxHealth) : 0f;
-
-        bool isInitialUpdate = lastActualHealth < 0;
-        bool healed = !isInitialUpdate && currentHealth > lastActualHealth;
-
-        if (healFillRoutine != null)
-        {
-            StopCoroutine(healFillRoutine);
-            healFillRoutine = null;
-        }
-
-        if (healthFill != null)
-        {
-            if (healed)
-            {
-                healFillRoutine = StartCoroutine(AnimateHealingFill(targetPercent));
-            }
-            else
-            {
-                healthFill.fillAmount = targetPercent;
-            }
-        }
-
-        if (healthText != null)
-            healthText.text = currentHealth + " / " + maxHealth;
-
-        if (!healed && damageFill != null && healthFill != null && damageFill.fillAmount < healthFill.fillAmount)
-        {
-            damageFill.fillAmount = healthFill.fillAmount;
-        }
-
-        lastActualHealth = currentHealth;
-    }
-
-
-    void UpdatePlayerStamina(float currentStamina, int maxStamina)
-    {
-        UpdateStaminaBarWidth(maxStamina);
-
-        float targetPercent = maxStamina > 0 ? Mathf.Clamp01(currentStamina / (float)maxStamina) : 0f;
-
-        if (staminaFill != null)
-        {
-            staminaFill.fillAmount = targetPercent;
-        }
-
-        if (staminaText != null)
-        {
-            staminaText.text = currentStamina + " / " + maxStamina;
-        }
-
-        // If there is no stamina damage animation,
-        // keep the damage fill attached to the real stamina fill.
-        if (staminaDamageDrainRoutine == null && staminaDamageFill != null && staminaFill != null)
-        {
-            staminaDamageFill.fillAmount = staminaFill.fillAmount;
-        }
-
-        lastActualStamina = currentStamina;
-    }
-
-    void UpdateHealthBarWidth(int maxHealth)
-    {
-        healthBarRoot.sizeDelta = new Vector2(maxHealth * pixelsPerHealth, healthBarRoot.sizeDelta.y);
-    }
-
-    void UpdateStaminaBarWidth(int maxStamina)
-    {
-        staminaBarRoot.sizeDelta = new Vector2(maxStamina * pixelsPerStamina, staminaBarRoot.sizeDelta.y);
-    }
-
-    void OnPlayerStaminaDamaged(int staminaLost)
-    {
-        if (staminaLost <= 0)
-            return;
-
-        if (staminaDamageFill != null && staminaFill != null)
-        {
-            float previousActualPercent = playerStats != null && playerStats.maxStamina.Value > 0 ? Mathf.Clamp01(lastActualStamina / (float)playerStats.maxStamina.Value) : staminaFill.fillAmount;
-
-            staminaDamageFill.fillAmount = Mathf.Max(staminaDamageFill.fillAmount, previousActualPercent);
-
-            if (staminaDamageDrainRoutine != null)
-                StopCoroutine(staminaDamageDrainRoutine);
-
-            staminaDamageDrainRoutine = StartCoroutine(DrainStaminaDamageFill());
-        }
-    }
-
-
-    IEnumerator DrainStaminaDamageFill()
-    {
-        yield return new WaitForSecondsRealtime(staminaHoldTime);
-
-        while (staminaDamageFill != null && staminaFill != null && staminaDamageFill.fillAmount > staminaFill.fillAmount + 0.001f)
-        {
-            staminaDamageFill.fillAmount = Mathf.MoveTowards(staminaDamageFill.fillAmount, staminaFill.fillAmount, staminaDrainSpeed * Time.unscaledDeltaTime);
-
-            yield return null;
-        }
-
-        if (staminaDamageFill != null && staminaFill != null)
-            staminaDamageFill.fillAmount = staminaFill.fillAmount;
-
-        staminaDamageDrainRoutine = null;
-    }
-
-
-    IEnumerator AnimateHealingFill(float targetPercent)
-    {
-        if (healthFill == null)
-            yield break;
-
-        float startPercent = healthFill.fillAmount;
-        float elapsed = 0f;
-        float duration = Mathf.Max(0.01f, healFillDuration);
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-
-            float t = Mathf.Clamp01(elapsed / duration);
-            float easedT = SmoothStep01(t);
-            float amount = Mathf.Lerp(startPercent, targetPercent, easedT);
-
-            healthFill.fillAmount = amount;
-
-            if (damageFill != null && damageFill.fillAmount < amount)
-                damageFill.fillAmount = amount;
-
-            yield return null;
-        }
-
-        healthFill.fillAmount = targetPercent;
-
-        if (damageFill != null && damageFill.fillAmount < targetPercent)
-            damageFill.fillAmount = targetPercent;
-
-        healFillRoutine = null;
-    }
-
-
-    void OnPlayerDamaged(int damageAmount)
-    {
-        if (damageAmount <= 0)
-            return;
-
-        if (damageFill != null && healthFill != null)
-        {
-            float previousActualPercent =
-                playerStats != null && playerStats.maxHealth.Value > 0 ? Mathf.Clamp01(lastActualHealth / (float)playerStats.maxHealth.Value) : healthFill.fillAmount;
-
-            damageFill.fillAmount = Mathf.Max(damageFill.fillAmount, previousActualPercent);
-
-            if (damageDrainRoutine != null)
-                StopCoroutine(damageDrainRoutine);
-
-            damageDrainRoutine = StartCoroutine(DrainDamageFill());
-        }
-
-        if (healthBarRoot != null)
-        {
-            if (shakeRoutine != null)
-                StopCoroutine(shakeRoutine);
-
-            shakeRoutine = StartCoroutine(ShakeHealthBar());
-        }
-    }
-
-
-    IEnumerator DrainDamageFill()
-    {
-        yield return new WaitForSecondsRealtime(damageHoldTime);
-
-        while (damageFill != null && healthFill != null && damageFill.fillAmount > healthFill.fillAmount + 0.001f)
-        {
-            damageFill.fillAmount = Mathf.MoveTowards(damageFill.fillAmount, healthFill.fillAmount, damageDrainSpeed * Time.unscaledDeltaTime);
-
-            yield return null;
-        }
-
-        if (damageFill != null && healthFill != null)
-            damageFill.fillAmount = healthFill.fillAmount;
-
-        damageDrainRoutine = null;
-    }
-
-
-    IEnumerator ShakeHealthBar()
-    {
-        float elapsed = 0f;
-
-        while (elapsed < shakeDuration)
-        {
-            float t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, shakeDuration));
-            float strength = shakeStrength * (1f - t);
-
-            healthBarRoot.anchoredPosition = healthBarStartPosition + Random.insideUnitCircle * strength;
-
-            elapsed += Time.unscaledDeltaTime;
-            yield return null;
-        }
-
-        healthBarRoot.anchoredPosition = healthBarStartPosition;
-        shakeRoutine = null;
-    }
-
-
-    void UpdatePotions(int current, int maximum)
-    {
-        if (potionText != null)
-            potionText.text = current.ToString();
-    }
-
-
-    void UpdateExperience(int current, int required)
-    {
-        float targetFill = required > 0 ? Mathf.Clamp01(current / (float)required) : 0f;
-
-        if (initialising)
-        {
-            if (experienceFill != null)
-                experienceFill.fillAmount = targetFill;
-
-            displayedExperience = current;
-
-            if (experienceText != null)
-                experienceText.text = current + " / " + required + " XP";
-
-            return;
-        }
-
-        if (experienceRoutine != null)
-            StopCoroutine(experienceRoutine);
-
-        int wraps = pendingLevelWraps;
-        pendingLevelWraps = 0;
-
-        experienceRoutine = StartCoroutine(AnimateExperience(current, required, targetFill, wraps));
-    }
-
-
-    IEnumerator AnimateExperience(
-        int targetExperience,
-        int required,
-        float targetFill,
-        int levelWraps)
-    {
-        if (experienceFill == null)
-        {
-            displayedExperience = targetExperience;
-
-            if (experienceText != null)
-                experienceText.text = targetExperience + " / " + required + " XP";
-
-            experienceRoutine = null;
-            yield break;
-        }
-
-        // Normal XP gain: ease directly towards the new amount.
-        if (levelWraps <= 0)
-        {
-            float startFill = experienceFill.fillAmount;
-            int startExperience = displayedExperience;
-            float elapsed = 0f;
-            float duration = Mathf.Max(0.01f, experienceFillDuration);
-
-            while (elapsed < duration)
-            {
-                elapsed += Time.unscaledDeltaTime;
-
-                float t = Mathf.Clamp01(elapsed / duration);
-                float easedT = SmoothStep01(t);
-
-                experienceFill.fillAmount = Mathf.Lerp(startFill, targetFill, easedT);
-
-                displayedExperience = Mathf.RoundToInt(Mathf.Lerp(startExperience, targetExperience, easedT));
-
-                if (experienceText != null)
-                {
-                    experienceText.text = displayedExperience + " / " + required + " XP";
-                }
-
-                yield return null;
-            }
-        }
-        else
-        {
-            // When levelling up, visually finish the old bar first.
-            yield return AnimateExperienceFillSegment(experienceFill.fillAmount, 1f, levelWrapDuration);
-
-            // If one reward causes several levels, give every level a
-            // visible 0 -> 100% sweep instead of skipping them.
-            for (int i = 1; i < levelWraps; i++)
-            {
-                experienceFill.fillAmount = 0f;
-
-                yield return AnimateExperienceFillSegment(0f, 1f, levelWrapDuration);
-            }
-
-            // Fill the leftover XP in the new level.
-            experienceFill.fillAmount = 0f;
-            displayedExperience = 0;
-
-            float elapsed = 0f;
-            float duration = Mathf.Max(0.01f, experienceFillDuration);
-
-            while (elapsed < duration)
-            {
-                elapsed += Time.unscaledDeltaTime;
-
-                float t = Mathf.Clamp01(elapsed / duration);
-                float easedT = SmoothStep01(t);
-
-                experienceFill.fillAmount =
-                    Mathf.Lerp(0f, targetFill, easedT);
-
-                displayedExperience = Mathf.RoundToInt(Mathf.Lerp(0f, targetExperience, easedT));
-
-                if (experienceText != null)
-                {
-                    experienceText.text = displayedExperience + " / " + required + " XP";
-                }
-
-                yield return null;
-            }
-        }
-
-        experienceFill.fillAmount = targetFill;
-        displayedExperience = targetExperience;
-
-        if (experienceText != null)
-        {
-            experienceText.text = targetExperience + " / " + required + " XP";
-        }
-
-        experienceRoutine = null;
-    }
-
-
-    IEnumerator AnimateExperienceFillSegment(float from, float to, float duration)
-    {
-        float elapsed = 0f;
-        duration = Mathf.Max(0.01f, duration);
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-
-            float t = Mathf.Clamp01(elapsed / duration);
-            float easedT = SmoothStep01(t);
-
-            experienceFill.fillAmount = Mathf.Lerp(from, to, easedT);
-
-            yield return null;
-        }
-
-        experienceFill.fillAmount = to;
-    }
-
-
-    void UpdateLevel(int level)
-    {
-        if (levelText != null)
-            levelText.text = level.ToString();
-
-        if (initialising || lastDisplayedLevel < 0)
-        {
-            lastDisplayedLevel = level;
-            return;
-        }
-
-        if (level > lastDisplayedLevel)
-        {
-            pendingLevelWraps += level - lastDisplayedLevel;
-
-            if (levelText != null)
-            {
-                if (levelPunchRoutine != null)
-                    StopCoroutine(levelPunchRoutine);
-
-                levelText.rectTransform.localScale = Vector3.one;
-
-                levelPunchRoutine = StartCoroutine(PulseScale(levelText.rectTransform, levelPunchScale, levelPunchDuration));
-            }
-        }
-
-        lastDisplayedLevel = level;
-    }
-
-
-    void UpdateKarma(int karma)
-    {
-        if (karmaText == null)
-            return;
-
-        if (initialising)
-        {
-            displayedKarma = karma;
-            karmaText.text = karma.ToString();
-            return;
-        }
-
-        if (karmaRoutine != null)
-            StopCoroutine(karmaRoutine);
-
-        karmaRoutine = StartCoroutine(AnimateKarma(karma));
-
-        if (karma > displayedKarma)
-        {
-            if (karmaPunchRoutine != null)
-                StopCoroutine(karmaPunchRoutine);
-
-            karmaText.rectTransform.localScale = Vector3.one;
-
-            karmaPunchRoutine = StartCoroutine(PulseScale(karmaText.rectTransform, karmaPunchScale, karmaPunchDuration));
-        }
-    }
-
-
-    IEnumerator AnimateKarma(int targetKarma)
-    {
-        int startKarma = displayedKarma;
-        int difference = Mathf.Abs(targetKarma - startKarma);
-
-        float amountT = Mathf.InverseLerp(1f, Mathf.Max(2, karmaDifferenceForMaxDuration), difference);
-
-        float duration = Mathf.Lerp(karmaCountMinDuration, karmaCountMaxDuration, amountT);
-
-        duration = Mathf.Max(0.01f, duration);
-
-        float elapsed = 0f;
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-
-            float t = Mathf.Clamp01(elapsed / duration);
-
-            // Ease-out feels like coins arrive quickly and settle naturally.
-            float easedT = 1f - Mathf.Pow(1f - t, 3f);
-
-            displayedKarma = Mathf.RoundToInt(Mathf.Lerp(startKarma, targetKarma, easedT));
-
-            karmaText.text = displayedKarma.ToString();
-
-            yield return null;
-        }
-
-        displayedKarma = targetKarma;
-        karmaText.text = targetKarma.ToString();
-
-        karmaRoutine = null;
-    }
-
-
-    IEnumerator PulseScale(RectTransform target, float peakScale, float duration)
-    {
-        if (target == null)
-            yield break;
-
-        float elapsed = 0f;
-        duration = Mathf.Max(0.01f, duration);
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-
-            float t = Mathf.Clamp01(elapsed / duration);
-
-            // 1 -> peak -> 1.
-            float pulse = Mathf.Sin(t * Mathf.PI);
-            float scale = Mathf.Lerp(1f, peakScale, pulse);
-
-            target.localScale = Vector3.one * scale;
-
-            yield return null;
-        }
-
-        target.localScale = Vector3.one;
-    }
-
-
-    void UpdateCooldownDisplay(CooldownDisplay display, float remaining, float duration)
-    {
-        if (display == null)
-            return;
-
-        bool isCoolingDown = remaining > 0f;
-
-        if (display.fill != null)
-        {
-            display.fill.fillAmount = duration > 0f ? remaining / duration : 0f;
-
-            display.fill.enabled = isCoolingDown;
-        }
-
-        if (display.timerText != null)
-        {
-            display.timerText.gameObject.SetActive(isCoolingDown);
-
-            if (isCoolingDown)
-                display.timerText.text = remaining.ToString("0.0");
-        }
-    }
-
-
-    public void ShowInteractionPrompt(string message)
-    {
-        if (interactionPanel != null)
-            interactionPanel.SetActive(true);
-
-        if (interactionText != null)
-            interactionText.text = message;
-    }
-
-    public void HideInteractionPrompt()
-    {
-        if (interactionPanel != null)
-            interactionPanel.SetActive(false);
-    }
-
-    public void ToggleInventory()
-    {
-        if (inventoryPanel == null)
-            return;
-
-        inventoryPanel.SetActive(!inventoryPanel.activeSelf);
-    }
-
-    float SmoothStep01(float t)
-    {
-        t = Mathf.Clamp01(t);
-        return t * t * (3f - 2f * t);
-    }
-
 
     void OnDestroy()
     {
@@ -727,5 +142,262 @@ public class UIManager : MonoBehaviour
             playerStats.OnLevelChanged -= UpdateLevel;
             playerStats.OnKarmaChanged -= UpdateKarma;
         }
+
+        if (playerMana != null)
+        {
+            playerMana.OnManaChanged -= UpdatePlayerMana;
+            playerMana.OnManaSpent -= OnPlayerManaSpent;
+        }
+    }
+
+    void Update()
+    {
+        UpdateDashCooldown();
+
+        if (Input.GetKeyDown(KeyCode.I))
+            ToggleInventory();
+    }
+
+    // One slot for each ability, with the ultimate last
+    void CreateAbilitySlots()
+    {
+        foreach (Ability ability in playerStats.Abilities)
+            Instantiate(abilitySlotPrefab, abilitySlotParent).Setup(ability);
+
+        if (playerStats.Ultimate != null)
+            Instantiate(abilitySlotPrefab, abilitySlotParent).Setup(playerStats.Ultimate);
+    }
+
+    // Bars
+
+    void UpdatePlayerHealth(int current, int max)
+    {
+        healthBar.Set(current, max);
+    }
+
+    void UpdatePlayerStamina(float current, int max)
+    {
+        staminaBar.Set(current, max);
+    }
+
+    void UpdatePlayerMana(float current, float max)
+    {
+        manaBar.Set(current, max);
+    }
+
+    // By the time these are called the stat has already gone down, so the old value is current + lost
+
+    void OnPlayerDamaged(int damage)
+    {
+        healthBar.ShowLoss(playerStats.currentHealth + damage, playerStats.maxHealth.Value);
+
+        if (shakeRoutine != null)
+            StopCoroutine(shakeRoutine);
+
+        shakeRoutine = StartCoroutine(ShakeHealthBar());
+    }
+
+    void OnPlayerStaminaDamaged(int lost)
+    {
+        staminaBar.ShowLoss(playerStats.currentStamina + lost, playerStats.maxStamina.Value);
+    }
+
+    void OnPlayerManaSpent(float spent)
+    {
+        manaBar.ShowLoss(playerMana.Current + spent, playerMana.Max);
+    }
+
+    IEnumerator ShakeHealthBar()
+    {
+        RectTransform bar = HealthBarRect;
+
+        for (float elapsed = 0f; elapsed < shakeDuration; elapsed += Time.unscaledDeltaTime)
+        {
+            // Shake less and less towards the end
+            float strength = shakeStrength * (1f - elapsed / shakeDuration);
+            bar.anchoredPosition = healthBarStartPosition + Random.insideUnitCircle * strength;
+            yield return null;
+        }
+
+        bar.anchoredPosition = healthBarStartPosition;
+        shakeRoutine = null;
+    }
+
+    void UpdatePotions(int current, int maximum)
+    {
+        potionText.text = current.ToString();
+    }
+
+    // Level and experience
+
+    void UpdateLevel(int level)
+    {
+        levelText.text = level.ToString();
+
+        if (level > displayedLevel)
+        {
+            levelsGained += level - displayedLevel;
+            StartPunch(ref levelPunchRoutine, levelText.rectTransform, levelPunchScale, levelPunchDuration);
+        }
+
+        displayedLevel = level;
+    }
+
+    void UpdateExperience(int current, int required)
+    {
+        if (experienceRoutine != null)
+            StopCoroutine(experienceRoutine);
+
+        experienceRoutine = StartCoroutine(AnimateExperience(current, required, levelsGained));
+        levelsGained = 0;
+    }
+
+    IEnumerator AnimateExperience(int targetExperience, int required, int levelUps)
+    {
+        // For each level up, fill the bar to the end first (from empty for any extra levels)
+        for (int i = 0; i < levelUps; i++)
+        {
+            float from = i == 0 ? experienceFill.fillAmount : 0f;
+            yield return FillExperienceBar(from, 1f, levelWrapDuration);
+            experienceFill.fillAmount = 0f;
+            displayedExperience = 0;
+        }
+
+        // Then fill up to the new amount
+        float startFill = experienceFill.fillAmount;
+        int startExperience = displayedExperience;
+        float targetFill = targetExperience / (float)required;
+
+        for (float elapsed = 0f; elapsed < experienceFillDuration; elapsed += Time.unscaledDeltaTime)
+        {
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / experienceFillDuration);
+
+            experienceFill.fillAmount = Mathf.Lerp(startFill, targetFill, t);
+            displayedExperience = Mathf.RoundToInt(Mathf.Lerp(startExperience, targetExperience, t));
+            SetExperienceText(displayedExperience, required);
+
+            yield return null;
+        }
+
+        displayedExperience = targetExperience;
+        SetExperienceBar(targetExperience, required);
+        experienceRoutine = null;
+    }
+
+    IEnumerator FillExperienceBar(float from, float to, float duration)
+    {
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.unscaledDeltaTime)
+        {
+            experienceFill.fillAmount = Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, elapsed / duration));
+            yield return null;
+        }
+
+        experienceFill.fillAmount = to;
+    }
+
+    void SetExperienceBar(int current, int required)
+    {
+        experienceFill.fillAmount = current / (float)required;
+        SetExperienceText(current, required);
+    }
+
+    void SetExperienceText(int current, int required)
+    {
+        if (experienceText != null)
+            experienceText.text = current + " / " + required + " XP";
+    }
+
+    // Karma
+
+    void UpdateKarma(int karma)
+    {
+        if (karmaRoutine != null)
+            StopCoroutine(karmaRoutine);
+
+        karmaRoutine = StartCoroutine(CountKarma(karma));
+
+        if (karma > displayedKarma)
+            StartPunch(ref karmaPunchRoutine, karmaText.rectTransform, karmaPunchScale, karmaPunchDuration);
+    }
+
+    // Counts the number up, bigger gains take a bit longer
+    IEnumerator CountKarma(int targetKarma)
+    {
+        int startKarma = displayedKarma;
+        float amount = Mathf.Abs(targetKarma - startKarma) / (float)karmaDifferenceForMaxDuration;
+        float duration = Mathf.Lerp(karmaCountMinDuration, karmaCountMaxDuration, amount);
+
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.unscaledDeltaTime)
+        {
+            // Fast at first then slows down at the end
+            float t = 1f - Mathf.Pow(1f - elapsed / duration, 3f);
+
+            displayedKarma = Mathf.RoundToInt(Mathf.Lerp(startKarma, targetKarma, t));
+            karmaText.text = displayedKarma.ToString();
+            yield return null;
+        }
+
+        displayedKarma = targetKarma;
+        karmaText.text = targetKarma.ToString();
+        karmaRoutine = null;
+    }
+
+    // Quickly scales some text up and back down to draw attention to it
+    void StartPunch(ref Coroutine routine, RectTransform target, float peakScale, float duration)
+    {
+        if (routine != null)
+            StopCoroutine(routine);
+
+        target.localScale = Vector3.one;
+        routine = StartCoroutine(Punch(target, peakScale, duration));
+    }
+
+    IEnumerator Punch(RectTransform target, float peakScale, float duration)
+    {
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.unscaledDeltaTime)
+        {
+            float scale = Mathf.Lerp(1f, peakScale, Mathf.Sin(elapsed / duration * Mathf.PI));
+            target.localScale = Vector3.one * scale;
+            yield return null;
+        }
+
+        target.localScale = Vector3.one;
+    }
+
+    // Dash cooldown (only if it's been set up in the inspector)
+    void UpdateDashCooldown()
+    {
+        float remaining = playerController.DashCooldownRemaining;
+        bool coolingDown = remaining > 0f;
+
+        if (dash.fill != null)
+        {
+            dash.fill.fillAmount = remaining / playerController.DashCooldownDuration;
+            dash.fill.enabled = coolingDown;
+        }
+
+        if (dash.timerText != null)
+        {
+            dash.timerText.gameObject.SetActive(coolingDown);
+            dash.timerText.text = remaining.ToString("0.0");
+        }
+    }
+
+    // Interaction prompt and inventory
+
+    public void ShowInteractionPrompt(string message)
+    {
+        interactionPanel.SetActive(true);
+        interactionText.text = message;
+    }
+
+    public void HideInteractionPrompt()
+    {
+        interactionPanel.SetActive(false);
+    }
+
+    public void ToggleInventory()
+    {
+        inventoryPanel.SetActive(!inventoryPanel.activeSelf);
     }
 }

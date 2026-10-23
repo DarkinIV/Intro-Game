@@ -1,38 +1,29 @@
 using UnityEngine;
 
-/* The base item class. All items should derive from this. */
-
+// Base class for every item. Other item types (Consumable, Equipment) inherit from this.
 [CreateAssetMenu(fileName = "New Item", menuName = "Inventory/Item")]
-public class Item : ScriptableObject {
+public class Item : ScriptableObject
+{
+    new public string name = "New Item";
+    public Sprite icon = null;
+    [TextArea] public string description;
+    public bool showInInventory = true;
+    public bool isStackable;
+    [Min(1)] public int maxStack = 1;
 
-	new public string name = "New Item";	// Name of the item
-	public Sprite icon = null;				// Item icon
-        [TextArea] public string description;
-        public ItemCategory category = ItemCategory.Misc;
-	public bool showInInventory = true;
-        public bool isStackable;
-        [Min(1)] public int maxStack = 1;
+    // Called when the item is clicked in the inventory
+    public virtual void Use()
+    {
+    }
 
-	// Called when the item is pressed in the inventory
-	public virtual void Use ()
-	{
-		// Use the item
-		// Something may happen
-	}
+    public void RemoveFromInventory()
+    {
+        Inventory.instance.Remove(this);
+    }
 
-	// Call this method to remove the item from inventory
-	public void RemoveFromInventory ()
-	{
-                if (Inventory.instance != null)
-                        Inventory.instance.Remove(this);
-	}
-
-        protected virtual void OnValidate()
-        {
-                if (!isStackable)
-                        maxStack = 1;
-                else
-                        maxStack = Mathf.Max(1, maxStack);
-        }
-
+    protected virtual void OnValidate()
+    {
+        if (!isStackable)
+            maxStack = 1;
+    }
 }

@@ -1,46 +1,72 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-[Serializable]
+[System.Serializable]
 public class ChestItemEntry
 {
     public Item item;
     [Min(1)] public int quantity = 1;
 }
 
-public class TreasureChest : Interactable {
+// Plays the open animation and then gives its loot to the player.
+// Anything that doesn't fit stays in the chest so the player can come back for it.
+public class TreasureChest : Interactable
+{
+    public ChestItemEntry[] loot;
 
-	Animator animator;
+    Animator animator;
+    bool isOpen;
+    bool isOpening;
 
-	bool isOpen;
-	public ChestItemEntry[] loot = Array.Empty<ChestItemEntry>();
+    void Start()
+    {
+        animator = GetComponent<Animator>();
+    }
 
-	void Start() {
-		animator = GetComponent<Animator> ();
-	}
+    // Can interact while it's closed, or open with loot still left in it
+    public override bool CanInteract(Transform player)
+    {
+        return !isOpening && (!isOpen || HasLoot()) && base.CanInteract(player);
+    }
 
-	public override void Interact ()
-	{
-		base.Interact ();
-		if (!isOpen) {
-			animator.SetTrigger ("Open");
-			StartCoroutine (CollectTreasure ());
-		}
-	}
+    public override void Interact()
+    {
+        if (isOpen)
+            TakeLoot();
+        else if (!isOpening)
+            StartCoroutine(Open());
+    }
 
-	IEnumerator CollectTreasure() {
+    IEnumerator Open()
+    {
+        isOpening = true;
+        animator.SetTrigger("Open");
 
-		isOpen = true;
+        // Wait for the lid to open
+        yield return new WaitForSeconds(1f);
 
-		yield return new WaitForSeconds (1f);
-		print ("Chest opened");
-		foreach (ChestItemEntry entry in loot) {
-			if (entry == null || entry.item == null)
-				continue;
+        isOpening = false;
+        isOpen = true;
+        TakeLoot();
+    }
 
-			Inventory.instance.Add(entry.item, Mathf.Max(1, entry.quantity));
-		}
-	}
+    void TakeLoot()
+    {
+        foreach (ChestItemEntry entry in loot)
+        {
+            if (entry.quantity > 0)
+                entry.quantity -= Inventory.instance.Add(entry.item, entry.quantity);
+        }
+    }
+
+    bool HasLoot()
+    {
+        foreach (ChestItemEntry entry in loot)
+        {
+            if (entry.quantity > 0)
+                return true;
+        }
+
+        return false;
+    }
 }

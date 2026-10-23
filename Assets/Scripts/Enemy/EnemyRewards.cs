@@ -1,11 +1,6 @@
 using UnityEngine;
 
-/*
-    Gives the player progression rewards when this enemy dies.
-
-    Add this component to each enemy prefab and set the XP and Karma
-    values independently in the Inspector.
-*/
+// Gives the player experience and karma when this enemy dies
 [RequireComponent(typeof(CharacterStats))]
 public class EnemyRewards : MonoBehaviour
 {
@@ -14,48 +9,28 @@ public class EnemyRewards : MonoBehaviour
     [SerializeField] int karmaReward = 10;
 
     CharacterStats stats;
-    bool rewardsGiven;
-
 
     void Awake()
     {
         stats = GetComponent<CharacterStats>();
     }
 
-
     void OnEnable()
     {
-        if (stats != null)
-            stats.OnHealthReachedZero += GiveRewards;
+        stats.OnHealthReachedZero += GiveRewards;
     }
-
 
     void OnDisable()
     {
-        if (stats != null)
-            stats.OnHealthReachedZero -= GiveRewards;
+        stats.OnHealthReachedZero -= GiveRewards;
     }
-
 
     void GiveRewards()
     {
-        if (rewardsGiven)
+        if (Player.instance == null)
             return;
 
-        rewardsGiven = true;
-
-        PlayerStats playerStats = null;
-
-        if (Player.instance != null)
-            playerStats = Player.instance.playerStats;
-
-        if (playerStats == null)
-            playerStats = FindFirstObjectByType<PlayerStats>();
-
-        if (playerStats == null)
-            return;
-
-        playerStats.AddExperience(experienceReward);
-        playerStats.AddKarma(karmaReward);
+        Player.instance.playerStats.AddExperience(experienceReward);
+        Player.instance.playerStats.AddKarma(karmaReward);
     }
 }

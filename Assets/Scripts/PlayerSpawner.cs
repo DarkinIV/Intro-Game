@@ -5,7 +5,9 @@ public class PlayerSpawner : MonoBehaviour
     [SerializeField] private Transform spawnPoint;
     public CharacterData selectedCharacter;
     public CameraController cameraController;
-    void Start()
+
+    // Awake so the player exists before anything's Start looks for it (UIManager, enemies)
+    void Awake()
     {
         selectedCharacter = RunSelection.SelectedCharacter;
 

@@ -1,13 +1,8 @@
-using System.Collections;
 using TMPro;
 using UnityEngine;
 
-/*
-    One animated world-space damage number.
-
-    The number pops, jumps in a small arc, has a light secondary bounce,
-    drifts sideways and fades away.
-*/
+// One floating damage number. It pops in, jumps up in an arc with a little bounce,
+// drifts to the side and fades out.
 [RequireComponent(typeof(RectTransform))]
 public class DamageNumber : MonoBehaviour
 {
@@ -18,7 +13,7 @@ public class DamageNumber : MonoBehaviour
 
     [Header("Lifetime")]
     [SerializeField] float lifetime = 0.85f;
-    [SerializeField] float fadeStart = 0.55f;
+    [SerializeField] float fadeStart = 0.55f;   // starts fading at this point of its life (0 to 1)
 
     [Header("Bounce Motion")]
     [SerializeField] float bounceHeight = 0.65f;
@@ -34,150 +29,61 @@ public class DamageNumber : MonoBehaviour
 
     Camera cam;
     Vector3 startPosition;
-    Vector3 sidewaysDirection;
-    float damageScale = 1f;
+    Vector3 sideways;
+    float size;
     Color baseColour;
-
+    float age;
 
     public void Initialise(int damageAmount, Color colour, float scale, Camera targetCamera)
     {
         cam = targetCamera;
-        damageScale = Mathf.Max(0.01f, scale);
+        size = scale;
         baseColour = colour;
 
-        if (damageText == null)
-            damageText = GetComponent<TMP_Text>();
-
-        if (damageText != null)
-        {
-            damageText.text = damageAmount.ToString();
-            damageText.color = colour;
-            damageText.outlineWidth = outlineWidth;
-            damageText.outlineColor = outlineColour;
-            damageText.raycastTarget = false;
-        }
+        damageText.text = damageAmount.ToString();
+        damageText.color = colour;
+        damageText.outlineWidth = outlineWidth;
+        damageText.outlineColor = outlineColour;
 
         startPosition = transform.position;
-
-        if (cam != null)
-        {
-            sidewaysDirection = cam.transform.right * Random.Range(-horizontalDrift, horizontalDrift);
-
-            transform.rotation = cam.transform.rotation;
-        }
-        else
-        {
-            sidewaysDirection = Vector3.right * Random.Range(-horizontalDrift, horizontalDrift);
-        }
-
-        transform.localScale = Vector3.one * damageScale * startingScale;
-
-        StartCoroutine(Animate());
+        sideways = cam.transform.right * Random.Range(-horizontalDrift, horizontalDrift);
+        transform.localScale = Vector3.one * size * startingScale;
     }
 
-
-    IEnumerator Animate()
+    void Update()
     {
-        float elapsed = 0f;
-        float safeLifetime = Mathf.Max(0.01f, lifetime);
+        age += Time.unscaledDeltaTime;
+        float t = age / lifetime;
 
-        while (elapsed < safeLifetime)
+        if (t >= 1f)
         {
-            elapsed += Time.unscaledDeltaTime;
-
-            float t = Mathf.Clamp01(elapsed / safeLifetime);
-
-            UpdatePosition(t);
-            UpdateScale(elapsed);
-            UpdateAlpha(t);
-
-            if (cam != null)
-                transform.rotation = cam.transform.rotation;
-
-            yield return null;
-        }
-
-        Destroy(gameObject);
-    }
-
-
-    void UpdatePosition(float t)
-    {
-        // Main jump: one clean arc.
-        float mainArc = Mathf.Sin(t * Mathf.PI) * bounceHeight;
-
-        // Small secondary movement makes the number feel less linear
-        // and gives it the "bouncy" combat-text feel.
-        float secondaryBounce = Mathf.Sin(t * Mathf.PI * 3f) * secondaryBounceHeight * (1f - t);
-
-        float verticalOffset = mainArc + secondaryBounce + upwardDrift * t;
-
-        transform.position = startPosition + sidewaysDirection * t + Vector3.up * verticalOffset;
-    }
-
-
-    void UpdateScale(float elapsed)
-    {
-        float scaleMultiplier;
-
-        if (elapsed < popDuration)
-        {
-            float t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, popDuration));
-
-            float easedT = EaseOutBack(t);
-
-            scaleMultiplier = Mathf.Lerp(startingScale, overshootScale, easedT);
-        }
-        else if (elapsed < popDuration + settleDuration)
-        {
-            float t = Mathf.Clamp01((elapsed - popDuration) / Mathf.Max(0.01f, settleDuration));
-
-            scaleMultiplier = Mathf.Lerp(overshootScale, 1f, SmoothStep01(t));
-        }
-        else
-        {
-            scaleMultiplier = 1f;
-        }
-
-        transform.localScale = Vector3.one * damageScale * scaleMultiplier;
-    }
-
-
-    void UpdateAlpha(float t)
-    {
-        if (damageText == null)
+            Destroy(gameObject);
             return;
-
-        float alpha = 1f;
-
-        if (t > fadeStart)
-        {
-            float fadeT = Mathf.InverseLerp(fadeStart, 1f, t);
-
-            alpha = 1f - SmoothStep01(fadeT);
         }
+
+        // One big arc plus a smaller bounce that dies down
+        float height = Mathf.Sin(t * Mathf.PI) * bounceHeight
+                     + Mathf.Sin(t * Mathf.PI * 3f) * secondaryBounceHeight * (1f - t)
+                     + upwardDrift * t;
+
+        transform.position = startPosition + sideways * t + Vector3.up * height;
+        transform.localScale = Vector3.one * size * PopScale();
+        transform.rotation = cam.transform.rotation;
 
         Color colour = baseColour;
-        colour.a *= alpha;
-
+        colour.a *= 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(fadeStart, 1f, t));
         damageText.color = colour;
     }
 
-
-    float SmoothStep01(float t)
+    // Grows past full size quickly, then settles back down
+    float PopScale()
     {
-        t = Mathf.Clamp01(t);
-        return t * t * (3f - 2f * t);
-    }
+        if (age < popDuration)
+            return Mathf.Lerp(startingScale, overshootScale, Mathf.SmoothStep(0f, 1f, age / popDuration));
 
+        if (age < popDuration + settleDuration)
+            return Mathf.Lerp(overshootScale, 1f, Mathf.SmoothStep(0f, 1f, (age - popDuration) / settleDuration));
 
-    float EaseOutBack(float t)
-    {
-        const float c1 = 1.70158f;
-        const float c3 = c1 + 1f;
-
-        float x = t - 1f;
-
-        return 1f + c3 * x * x * x + c1 * x * x;
+        return 1f;
     }
 }

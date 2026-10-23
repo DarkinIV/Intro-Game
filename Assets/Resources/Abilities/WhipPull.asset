@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5384073cb50ea2d48b663a68e004175a, type: 3}
+  m_Name: WhipPull
+  m_EditorClassIdentifier: 
+  abilityName: Whip Pull
+  icon: {fileID: 21300000, guid: 6c16e1ddc97bef541a7856dbeda08ce8, type: 3}
+  cooldown: 6
+  description: Lash an enemy and yank it in, or pull yourself to a heavy one
+  range: 10
+  stopDistance: 2.5
+  pullTime: 0.25
+  stunTime: 0.6
+  zipSpeed: 22
+  zipStopDistance: 2.5
+  zipMaxTime: 0.6

@@ -2,7 +2,7 @@ public enum StatRank { D, C, B, A, S }
 
 public static class StatRankExtensions
 {
-    // Level 1 starting values per rank
+    // Starting stats at level 1
     public static int StartVitality(this StatRank r) => r switch
     {
         StatRank.S => 140,
@@ -21,38 +21,38 @@ public static class StatRankExtensions
     };
     public static int StartStrength(this StatRank r) => r switch
     {
-        StatRank.S => 18,
-        StatRank.A => 14,
-        StatRank.B => 11,
-        StatRank.C => 8,
-        _         => 6
+        StatRank.S => 14,
+        StatRank.A => 12,
+        StatRank.B => 10,
+        StatRank.C => 6,
+        _         => 4
     };
     public static int StartMagic(this StatRank r) => r switch
     {
-        StatRank.S => 18,
-        StatRank.A => 14,
-        StatRank.B => 11,
-        StatRank.C => 8,
-        _         => 6
+        StatRank.S => 12,
+        StatRank.A => 8,
+        StatRank.B => 4,
+        StatRank.C => 0,
+        _         => 0
     };
     public static float StartAttackSpeed(this StatRank r) => r switch
     {
-        StatRank.S => 1.60f,
-        StatRank.A => 1.35f,
-        StatRank.B => 1.10f,
-        StatRank.C => 0.90f,
-        _         => 0.75f
+        StatRank.S => 1.30f,
+        StatRank.A => 1.15f,
+        StatRank.B => 1f,
+        StatRank.C => 0.95f,
+        _         => 0.85f
     };
-    public static int StartPace(this StatRank r) => r switch
+    public static float StartPace(this StatRank r) => r switch
     {
-        StatRank.S => 8,
-        StatRank.A => 7,
-        StatRank.B => 6,
-        StatRank.C => 5,
-        _         => 4
+        StatRank.S => 7f,
+        StatRank.A => 6.5f,
+        StatRank.B => 6f,
+        StatRank.C => 5f,
+        _         => 4f
     };
 
-    // Per-level GAIN per rank – HIGHER rank = MORE scaling
+    // How much each stat goes up every level
     public static int LevelVitality(this StatRank r) => r switch
     {
         StatRank.S => 12,
@@ -63,11 +63,11 @@ public static class StatRankExtensions
     };
     public static int LevelEnergy(this StatRank r) => r switch
     {
-        StatRank.S => 10,
-        StatRank.A => 8,
-        StatRank.B => 6,
-        StatRank.C => 5,
-        _         => 3
+        StatRank.S => 6,
+        StatRank.A => 5,
+        StatRank.B => 4,
+        StatRank.C => 3,
+        _         => 2
     };
     public static int LevelStrength(this StatRank r) => r switch
     {
@@ -79,19 +79,19 @@ public static class StatRankExtensions
     };
     public static int LevelMagic(this StatRank r) => r switch
     {
-        StatRank.S => 5,
-        StatRank.A => 4,
-        StatRank.B => 3,
-        StatRank.C => 2,
-        _         => 1
+        StatRank.S => 4,
+        StatRank.A => 3,
+        StatRank.B => 1,
+        StatRank.C => 0,
+        _         => 0
     };
     public static float LevelAttackSpeed(this StatRank r) => r switch
     {
-        StatRank.S => 0.04f,
-        StatRank.A => 0.03f,
-        StatRank.B => 0.02f,
-        StatRank.C => 0.015f,
-        _         => 0.01f
+        StatRank.S => 0.02f,
+        StatRank.A => 0.01f,
+        StatRank.B => 0f,
+        StatRank.C => 0f,
+        _         => 0f
     };
     public static float LevelPace(this StatRank r) => r switch
     {
@@ -100,5 +100,36 @@ public static class StatRankExtensions
         StatRank.B => 1f,
         StatRank.C => 0,
         _         => 0
+    };
+
+    // Agility, for jumping and wall moves. These don't change with level.
+    public static int AirJumps(this StatRank r) => r switch
+    {
+        StatRank.S => 1,
+        StatRank.A => 1,
+        _         => 0
+    };
+    public static float JumpHeightMultiplier(this StatRank r) => r switch
+    {
+        StatRank.S => 1.15f,
+        StatRank.A => 1.07f,
+        _         => 1f
+    };
+    public static float WallTimeMultiplier(this StatRank r) => r switch
+    {
+        StatRank.S => 1.5f,
+        StatRank.A => 1.3f,
+        StatRank.B => 1f,
+        StatRank.C => 0.85f,
+        _         => 0.7f
+    };
+    // Lower is better here, it multiplies the stamina cost of wall moves and slides
+    public static float TraversalStaminaMultiplier(this StatRank r) => r switch
+    {
+        StatRank.S => 0.5f,
+        StatRank.A => 0.7f,
+        StatRank.B => 1f,
+        StatRank.C => 1.2f,
+        _         => 1.4f
     };
 }

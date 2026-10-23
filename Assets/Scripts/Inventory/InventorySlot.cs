@@ -1,98 +1,53 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Events;
-using UnityEngine.EventSystems;
 using TMPro;
 
-/* Sits on all InventorySlots. */
+// One slot in the inventory UI. The slot's buttons call UseItem and RemoveItem.
+public class InventorySlot : MonoBehaviour
+{
+    public Image icon;
+    public Button removeButton;
+    public TMP_Text quantityText;   // optional
 
-public class InventorySlot : MonoBehaviour {
+    InventoryEntry entry;
 
-	public Image icon;
-	public Button removeButton;
-	public TMP_Text quantityText;
+    public void AddItem(InventoryEntry newEntry)
+    {
+        entry = newEntry;
 
-	InventoryEntry entry;
+        icon.sprite = entry.item.icon;
+        icon.enabled = entry.item.icon != null;
+        removeButton.interactable = true;
 
-	public InventoryEntry Entry => entry;
-	public Item Item => entry != null ? entry.item : null;
-	public int Quantity => entry != null ? entry.quantity : 0;
+        // Only show the number for stacks of more than one
+        if (quantityText != null)
+        {
+            quantityText.gameObject.SetActive(entry.item.isStackable && entry.quantity > 1);
+            quantityText.text = entry.quantity.ToString();
+        }
+    }
 
-	public void AddItem (InventoryEntry newEntry)
-	{
-		entry = newEntry;
+    public void ClearSlot()
+    {
+        entry = null;
 
-		if (entry == null || entry.IsEmpty)
-		{
-			ClearSlot();
-			return;
-		}
+        icon.sprite = null;
+        icon.enabled = false;
+        removeButton.interactable = false;
 
-		if (icon != null)
-		{
-			icon.sprite = entry.item.icon;
-			icon.enabled = entry.item.icon != null;
-		}
-		else
-		{
-			Debug.LogWarning($"InventorySlot '{name}' has no icon Image assigned; cannot render '{entry.item.name}'.", this);
-		}
+        if (quantityText != null)
+            quantityText.gameObject.SetActive(false);
+    }
 
-		if (removeButton != null)
-		{
-			removeButton.interactable = true;
-		}
+    public void RemoveItem()
+    {
+        if (entry != null)
+            Inventory.instance.Remove(entry.item, 1);
+    }
 
-		if (quantityText != null)
-		{
-			quantityText.gameObject.SetActive(entry.item.isStackable && entry.quantity > 1);
-			quantityText.text = entry.quantity.ToString();
-		}
-	}
-
-	public void ClearSlot ()
-	{
-		entry = null;
-
-		if (icon != null)
-		{
-			icon.sprite = null;
-			icon.enabled = false;
-		}
-
-		if (removeButton != null)
-		{
-			removeButton.interactable = false;
-		}
-
-		if (quantityText != null)
-		{
-			quantityText.gameObject.SetActive(false);
-			quantityText.text = string.Empty;
-		}
-	}
-
-	public void RemoveItemFromInventory ()
-	{
-		if (entry == null || entry.IsEmpty)
-			return;
-
-		if (Inventory.instance == null)
-			return;
-
-		Inventory.instance.Remove(entry.item, 1);
-	}
-
-	public void UseItem ()
-	{
-		if (entry == null || entry.IsEmpty)
-			return;
-
-		Item item = entry.item;
-		if (item != null)
-		{
-			item.Use();
-		}
-	}
-
+    public void UseItem()
+    {
+        if (entry != null)
+            entry.item.Use();
+    }
 }

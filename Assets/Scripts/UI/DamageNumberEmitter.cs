@@ -1,16 +1,11 @@
 using UnityEngine;
 
-/*
-    Add this to any character that should display floating damage numbers.
-
-    It listens to CharacterStats and forwards actual health lost to the
-    dedicated DamageNumberManager/world-space canvas.
-*/
+// Put this on any character that should show damage numbers when they get hit
 [RequireComponent(typeof(CharacterStats))]
 public class DamageNumberEmitter : MonoBehaviour
 {
     [Header("Position")]
-    [SerializeField] Transform damageNumberAnchor;
+    [SerializeField] Transform damageNumberAnchor;   // optional, otherwise uses the offset below
     [SerializeField] Vector3 fallbackOffset;
 
     [Header("Display")]
@@ -18,38 +13,27 @@ public class DamageNumberEmitter : MonoBehaviour
 
     CharacterStats stats;
 
-
     void Awake()
     {
         stats = GetComponent<CharacterStats>();
     }
 
-
     void OnEnable()
     {
-        if (stats != null)
-            stats.OnDamageTaken += OnDamageTaken;
+        stats.OnDamageTaken += OnDamageTaken;
     }
-
 
     void OnDisable()
     {
-        if (stats != null)
-            stats.OnDamageTaken -= OnDamageTaken;
+        stats.OnDamageTaken -= OnDamageTaken;
     }
-
 
     void OnDamageTaken(int damageAmount, DamageType damageType)
     {
         if (!showDamageNumbers)
             return;
 
-        if (DamageNumberManager.instance == null)
-            return;
-
-        Vector3 spawnPosition = damageNumberAnchor != null ? damageNumberAnchor.position : transform.position + fallbackOffset;
-
-        DamageNumberManager.instance.ShowDamage(damageAmount, damageType, spawnPosition);
-
+        Vector3 position = damageNumberAnchor != null ? damageNumberAnchor.position : transform.position + fallbackOffset;
+        DamageNumberManager.instance.ShowDamage(damageAmount, damageType, position);
     }
 }

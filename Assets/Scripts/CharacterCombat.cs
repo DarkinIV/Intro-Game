@@ -1,27 +1,44 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-// Shared combat mechanism between the player and the enemy AIs
-
+// Attacking for both the player and the enemies.
+// Animation events (OpenHitbox, FireProjectile, the combo window) decide when things happen during a swing,
+// and AttackStateBehaviour tells us whether we're in an attack animation at all.
 [RequireComponent(typeof(CharacterStats))]
 [RequireComponent(typeof(WeaponInventory))]
 public class CharacterCombat : MonoBehaviour
 {
+    // How long the animator gets to actually start the attack after it's pressed
+    const float AttackStartGrace = 0.3f;
+    static readonly int AttackTrigger = Animator.StringToHash("Attack");
+
     [Header("Combat")]
     [SerializeField] protected int baseDamage = 10;
+
+    public Transform Target;
 
     protected CharacterStats stats;
     protected Animator animator;
     protected WeaponInventory weapons;
 
-    bool attackStarted;
+    int activeAttackStates;   // can be 2 for a moment while blending into the next combo hit
+    float pendingUntil;       // attack pressed but the animator hasn't started it yet
     bool canCombo;
     bool queued;
+    bool interrupted;         // ignore events from an attack that got cancelled
+    bool committed;           // the hit has happened
+    bool recovered;           // the hit is over so we can move again
 
-    public Transform Target;
+    bool Busy => activeAttackStates > 0 || Time.time < pendingUntil;
 
-    public bool IsAttacking => animator != null && (animator.GetCurrentAnimatorStateInfo(0).IsTag("Attack") || (animator.IsInTransition(0) && animator.GetNextAnimatorStateInfo(0).IsTag("Attack")));
+    // From pressing attack until the hit is over you can't move (or only slowly)
+    public bool IsMovementLocked => Busy && !recovered;
+    // During the hit itself you can't turn or dash
+    public bool IsCommitted => committed && !recovered;
+    public float MoveMultiplier => IsMovementLocked && weapons.CurrentWeapon != null ? weapons.CurrentWeapon.attackMoveMultiplier : 1f;
 
-    public event System.Action OnAttack;
+    public event System.Action OnAttack;    // attack was pressed
+    public event System.Action OnStrike;    // the hitbox opened or the projectile was fired
     public event System.Action<CharacterStats> OnHit;
 
     protected virtual void Awake()
@@ -31,22 +48,40 @@ public class CharacterCombat : MonoBehaviour
         weapons = GetComponent<WeaponInventory>();
     }
 
-    protected virtual bool CanQueueCombo => true;
+    protected virtual void OnEnable()
+    {
+        stats.OnHealthReachedZero += CancelAttack;
+    }
 
-    // ATTACK INPUT
+    protected virtual void OnDisable()
+    {
+        stats.OnHealthReachedZero -= CancelAttack;
+
+        // The animator might get disabled before it calls exit on the attack state
+        activeAttackStates = 0;
+        pendingUntil = 0f;
+        committed = false;
+        recovered = false;
+        ResetAttackFlags();
+
+        if (animator.isActiveAndEnabled)
+            animator.ResetTrigger(AttackTrigger);
+    }
+
+    protected virtual bool CanQueueCombo => true;
 
     public virtual void TryAttack()
     {
-        if (stats.IsDead || weapons.CurrentWeapon == null || animator == null)
+        if (stats.IsDead || weapons.CurrentWeapon == null)
             return;
 
-        if (!attackStarted)
+        if (!Busy)
         {
             StartAttack();
             return;
         }
 
-        // Only accept another input while the combo window is open
+        // Pressing during the combo window queues the next hit
         if (canCombo && CanQueueCombo)
             queued = true;
     }
@@ -56,21 +91,61 @@ public class CharacterCombat : MonoBehaviour
         if (!CanAttack())
             return;
 
-        attackStarted = true;
         queued = false;
         canCombo = false;
+        pendingUntil = Time.time + AttackStartGrace;
 
-        animator.ResetTrigger("Attack");
-        animator.SetTrigger("Attack");
-
+        animator.SetTrigger(AttackTrigger);
         OnAttack?.Invoke();
     }
 
-    // ANIMATION EVENTS
+    // Used by dashing, stuns and dying
+    public void CancelAttack()
+    {
+        interrupted = true;
+        recovered = true;
+        pendingUntil = 0f;
+        ResetAttackFlags();
+        animator.ResetTrigger(AttackTrigger);
+    }
+
+    void ResetAttackFlags()
+    {
+        canCombo = false;
+        queued = false;
+        CloseHitbox();
+    }
+
+    // Called by AttackStateBehaviour
+
+    public void AttackStateEntered()
+    {
+        activeAttackStates++;
+        pendingUntil = 0f;
+        interrupted = false;
+        canCombo = false;
+        committed = false;
+        recovered = false;
+    }
+
+    public void AttackStateExited()
+    {
+        activeAttackStates = Mathf.Max(0, activeAttackStates - 1);
+
+        if (activeAttackStates == 0)
+        {
+            committed = false;
+            recovered = false;
+            ResetAttackFlags();
+        }
+    }
+
+    // Animation events
 
     public void OpenComboWindow()
     {
-        canCombo = true;
+        if (!interrupted)
+            canCombo = true;
     }
 
     public void CloseComboWindow()
@@ -81,80 +156,68 @@ public class CharacterCombat : MonoBehaviour
     public void ContinueCombo()
     {
         canCombo = false;
+        committed = false;
 
-        if (!queued || !CanQueueCombo || !CanAttack())
+        if (!queued || interrupted || !CanQueueCombo || !CanAttack())
         {
             EndAttack();
             return;
         }
+
         queued = false;
-
         CloseHitbox();
-
-        animator.ResetTrigger("Attack");
-        animator.SetTrigger("Attack");
-
+        animator.SetTrigger(AttackTrigger);
         OnAttack?.Invoke();
     }
 
-    public void EndAttack()
+    // No next hit was queued, so the attack is over
+    void EndAttack()
     {
-        attackStarted = false;
-        canCombo = false;
-        queued = false;
-
-        CloseHitbox();
-        animator.ResetTrigger("Attack");
+        recovered = true;
+        ResetAttackFlags();
+        animator.ResetTrigger(AttackTrigger);
     }
-
-    // MELEE
 
     public void OpenHitbox()
     {
+        if (interrupted)
+            return;
+
+        committed = true;
+
         if (weapons.Hitbox == null || !ConsumeAttackCost())
             return;
 
         weapons.Hitbox.StartSwing();
+        OnStrike?.Invoke();
     }
 
     public void CloseHitbox()
     {
-        if (weapons != null && weapons.Hitbox != null)
+        if (committed)
+            recovered = true;
+
+        if (weapons.Hitbox != null)
             weapons.Hitbox.StopSwing();
     }
 
-    // RANGED
     public void FireProjectile()
     {
-        if (weapons.CurrentWeapon == null)
-            return;
-
         WeaponItem weapon = weapons.CurrentWeapon;
 
-        if (weapon.attackKind != WeaponItem.AttackKind.Ranged || weapon.projectilePrefab == null)
+        if (interrupted || weapon == null)
             return;
-        if (!ConsumeAttackCost())
+
+        committed = true;
+
+        if (weapon.attackKind != WeaponItem.AttackKind.Ranged || !ConsumeAttackCost())
             return;
-        Transform muzzle = weapons.Muzzle != null ? weapons.Muzzle : transform;
 
-        Vector3 direction = GetAimDirection(muzzle.position);
+        Vector3 direction = GetAimDirection(weapons.Muzzle.position);
+        GameObject projectile = Instantiate(weapon.projectilePrefab, weapons.Muzzle.position, Quaternion.LookRotation(direction));
+        projectile.GetComponent<Projectile>().Launch(this, Target, weapon);
 
-        if (direction.sqrMagnitude < 0.001f)
-            direction = transform.forward;
-
-        GameObject obj = Instantiate(weapon.projectilePrefab, muzzle.position, Quaternion.LookRotation(direction));
-
-        Projectile projectile = obj.GetComponent<Projectile>();
-
-        if (projectile == null)
-        {
-            Debug.LogWarning($"{weapon.name}: Projectile component missing.");
-
-            Destroy(obj);
-            return;
-        }
-
-        projectile.Launch(this, Target, weapon.projectileMode, direction, weapon.projectileSpeed, weapon.projectileLifetime, weapon.projectileTurnSpeed);
+        OnStrike?.Invoke();
     }
 
     protected virtual Vector3 GetAimDirection(Vector3 origin)
@@ -162,58 +225,76 @@ public class CharacterCombat : MonoBehaviour
         return Target != null ? (Target.position + Vector3.up - origin).normalized : transform.forward;
     }
 
-    // CHARACTER-SPECIFIC COMBAT
-
+    // Each character's combat script can change these
     protected virtual bool CanAttack() => true;
     protected virtual bool ConsumeAttackCost() => true;
-
     protected virtual int GetAttackDamage() => baseDamage;
+    protected virtual DamageType AttackDamageType => DamageType.Physical;
+    protected virtual void OnSuccessfulHit(CharacterStats target, int damageDealt) { }
 
-    protected virtual void OnSuccessfulHit(CharacterStats target, int damageDealt)
+    // Not ourselves, not dead and not on our team (checked with tags)
+    public bool IsValidTarget(CharacterStats victim)
     {
+        if (victim == null || victim == stats || stats.IsDead || victim.IsDead)
+            return false;
+
+        return !gameObject.CompareTag(victim.gameObject.tag);
     }
 
     public bool CanDamage(CharacterStats victim)
     {
-        // Status validation
-        if (victim == null || victim == stats || stats.IsDead || victim.IsDead)
+        if (!IsValidTarget(victim))
             return false;
 
-        // Friendly fire check based on tags
-        if (gameObject.CompareTag(victim.gameObject.tag))
+        // They're dodging. Tell them so perfect dodges can be rewarded.
+        if (victim.IsInvulnerable)
         {
-            return false; // Same tags will return false
+            victim.NotifyHitAvoided(this);
+            return false;
         }
 
         return true;
     }
 
-    public void DealDamage(CharacterStats victim)
+    // multiplier is less than 1 when the hit was partly blocked
+    public void DealDamage(CharacterStats victim, float multiplier = 1f)
     {
         if (!CanDamage(victim))
             return;
 
-        int before = victim.currentHealth;
-        
         int bonus = weapons.CurrentWeapon != null ? weapons.CurrentWeapon.bonusDamage : 0;
-        
-        int dealt = GetAttackDamage() + bonus;
-        
-        victim.TakeDamage(dealt);
+        int damage = Mathf.RoundToInt((GetAttackDamage() + bonus) * multiplier);
 
-        OnSuccessfulHit(victim, dealt);
+        if (damage <= 0)
+            return;
+
+        victim.TakeDamage(damage, AttackDamageType, this);
+
+        OnSuccessfulHit(victim, damage);
         OnHit?.Invoke(victim);
     }
 
-    protected virtual void OnDisable()
+    // Same as a weapon hit but doesn't call OnHit, so things like the riposte don't trigger off it
+    public void DealAbilityDamage(CharacterStats victim, int amount, DamageType damageType = DamageType.Physical)
     {
-        CloseHitbox();
+        if (!CanDamage(victim))
+            return;
 
-        attackStarted = false;
-        canCombo = false;
-        queued = false;
+        victim.TakeDamage(amount, damageType, this);
+        OnSuccessfulHit(victim, amount);
+    }
 
-        if (animator != null && animator.isActiveAndEnabled)
-            animator.ResetTrigger("Attack");
+    public void DealAreaDamage(Vector3 center, float radius, int amount, DamageType damageType = DamageType.Physical)
+    {
+        // A character can have more than one collider so make sure we only hit them once
+        HashSet<CharacterStats> alreadyHit = new HashSet<CharacterStats>();
+
+        foreach (Collider col in Physics.OverlapSphere(center, radius, ~0, QueryTriggerInteraction.Ignore))
+        {
+            CharacterStats victim = col.GetComponentInParent<CharacterStats>();
+
+            if (victim != null && alreadyHit.Add(victim))
+                DealAbilityDamage(victim, amount, damageType);
+        }
     }
 }

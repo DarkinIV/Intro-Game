@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e40dbeeae5da484482e23f60c40525c, type: 3}
+  m_Name: Fortune Teller
+  m_EditorClassIdentifier: 
+  characterName: Fortune Teller
+  portrait: {fileID: 21300000, guid: 53a51e6c493114b819ff21f349149692, type: 3}
+  playerPrefab: {fileID: 1378388896379010, guid: 04ba5f43574113c4aba6ea8a80aa5bf3, type: 3}
+  Vitality: 2
+  Energy: 2
+  Strength: 0
+  Magic: 4
+  AttackSpeed: 2
+  Pace: 3
+  Agility: 2
+  abilities:
+  - key: 102
+    ability: {fileID: 11400000, guid: 9a36ace5b2194da2a9a868bb472ffb1e, type: 2}
+  - key: 99
+    ability: {fileID: 11400000, guid: 126eca58127f462fa0506dd4cfd51e86, type: 2}
+  - key: 118
+    ability: {fileID: 11400000, guid: 0881f97fafa2497eae658b076e63bf0a, type: 2}
+  ultimateAbility: {fileID: 11400000, guid: aeea116c47b84d8aab3bbffe0b2a1426, type: 2}
