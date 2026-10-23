@@ -1,0 +1,14 @@
+Assets used from Unity Asset Store:
+AllSky Free - 10 Sky / Skybox Set - https://assetstore.unity.com/packages/2d/textures-materials/sky/allsky-free-10-sky-skybox-set-146014
+Skybox Series Free - https://assetstore.unity.com/packages/2d/textures-materials/sky/skybox-series-free-103633
+Procedural Terrain Painter | FREE - Automatic Terrain Texturing - https://assetstore.unity.com/packages/tools/terrain/procedural-terrain-painter-free-automatic-terrain-texturing-188357
+Lava Rocks Texture #2 (Hand-painted, Seamless + Tileable) - https://assetstore.unity.com/packages/2d/textures-materials/floors/lava-rocks-texture-2-hand-painted-seamless-tileable-232056
+
+Gen AI was used for:
+Helping to successfully merge the different complex prototype mechanics made by different people in the group.
+Identifying weak points in the structure of the game.
+Debuging system for each character and their ability.
+Complex maths i.e whip animations, complex raycasting, fine tuning numbers to make the game balanced
+Cleaning up the messy bits of the code.
+Temporary effects before we created our own particle effects.
+Initial steps for the implementations of complex mechanics to give us basis to work on.
