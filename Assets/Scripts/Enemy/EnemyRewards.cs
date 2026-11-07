@@ -4,8 +4,6 @@ using UnityEngine;
 [RequireComponent(typeof(CharacterStats))]
 public class EnemyRewards : MonoBehaviour
 {
-    [Header("Death Rewards")]
-    [SerializeField] int experienceReward = 25;
     [SerializeField] int karmaReward = 10;
 
     CharacterStats stats;
@@ -29,8 +27,6 @@ public class EnemyRewards : MonoBehaviour
     {
         if (Player.instance == null)
             return;
-
-        Player.instance.playerStats.AddExperience(experienceReward);
         Player.instance.playerStats.AddKarma(karmaReward);
     }
 }

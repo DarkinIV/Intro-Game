@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: c0366edfae3c26744a7ff201c3e60a93
+timeCreated: 1527724047
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 119876
+  packageName: Fellbeast
+  packageVersion: 1.0
+  assetPath: Assets/Fellbeast/Assets/Controller/Fellbeast.controller
+  uploadId: 248992

@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 5c9bd261a0c04604695478e2f9d45b0a
+timeCreated: 1527772994
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 119876
+  packageName: Fellbeast
+  packageVersion: 1.0
+  assetPath: Assets/Fellbeast/Assets/Controller/Tree.controller
+  uploadId: 248992

@@ -11,8 +11,6 @@ public class PlayerStats : CharacterStats
 
     [Header("Level Progression")]
     [SerializeField] int startingLevel = 1;
-    [SerializeField] int baseExperienceToLevel = 100;
-    [SerializeField] float experienceGrowth = 1.35f;
 
     [Header("Rogue Settings")]
     [SerializeField] int levelsLostOnDeath = 1;
@@ -21,18 +19,24 @@ public class PlayerStats : CharacterStats
     [SerializeField] float staminaRegenDelay = 0.8f;
     [SerializeField] float staminaRegenPerSecond = 35f;
 
+    [Header("Insanity")]
+    public float attackInsanityIncreaseAmount = 1f;
+    public float damagedInsanityIncreaseAmount = 2f;
+
+    [Header("Dodge")]
+    [Tooltip("Seconds of invulnerability at the start of every dash. The same for every character")]
+    [SerializeField] float baseIFrameDuration = 0.3f;
+
     [Header("Selected Character")]
     [SerializeField] CharacterData selectedCharacter;
 
     public int CurrentHealthPotions { get; private set; }
     public int MaxHealthPotions => maxHealthPotions;
     public int CurrentLevel { get; private set; }
-    public int CurrentExperience { get; private set; }
+    public float CurrentInsanity { get; private set; }
+
     public int Karma { get; private set; }
     public CharacterData Character => selectedCharacter;
-
-    // Each level needs a bit more experience than the last one
-    public int ExperienceToNextLevel => Mathf.RoundToInt(baseExperienceToLevel * Mathf.Pow(experienceGrowth, CurrentLevel - 1));
 
     // Movement bonuses from the Agility rank
     public int AirJumps => selectedCharacter.Agility.AirJumps();
@@ -46,14 +50,18 @@ public class PlayerStats : CharacterStats
     // The Knight's block stops stamina coming back while it's held
     public bool StaminaRegenPaused { get; set; }
 
+    // How long a dash makes you invulnerable. Upgrades can add or take time away later.
+    public float IFrameDuration => Mathf.Max(0f, baseIFrameDuration + iFrameBonus);
+
     public event System.Action<int, int> OnPotionsChanged;
-    public event System.Action<int, int> OnExperienceChanged;
+    public event System.Action<float> OnInsanityChanged;
     public event System.Action<int> OnLevelChanged;
     public event System.Action<int> OnKarmaChanged;
 
     List<Ability> abilities = new List<Ability>();
     float lastStaminaSpendTime;
     float attackRateModifier;
+    float iFrameBonus;
 
     protected override void Awake()
     {
@@ -121,6 +129,10 @@ public class PlayerStats : CharacterStats
 
     public override float GetAttackSpeed() => base.GetAttackSpeed() + attackRateModifier;
 
+    // For upgrades and items, in seconds (negative makes the window shorter)
+    public void AddIFrameTime(float seconds) => iFrameBonus += seconds;
+    public void RemoveIFrameTime(float seconds) => iFrameBonus -= seconds;
+
     public void AddUltimateCharge(int damageDealt)
     {
         if (Ultimate != null && damageDealt > 0)
@@ -153,23 +165,6 @@ public class PlayerStats : CharacterStats
     }
 
     // Levels
-
-    public void AddExperience(int amount)
-    {
-        if (amount <= 0)
-            return;
-
-        CurrentExperience += amount;
-
-        // A big reward can give more than one level
-        while (CurrentExperience >= ExperienceToNextLevel)
-        {
-            CurrentExperience -= ExperienceToNextLevel;
-            LevelUp();
-        }
-
-        OnExperienceChanged?.Invoke(CurrentExperience, ExperienceToNextLevel);
-    }
 
     void LevelUp()
     {
@@ -216,6 +211,25 @@ public class PlayerStats : CharacterStats
     {
         for (int i = 0; i < levelsLostOnDeath; i++)
             LevelDown();
+    }
+
+    // Insanity
+    public void IncreaseInsanity(float amount)
+    {
+        if (amount <= 0)
+            return;
+
+        CurrentInsanity += amount;
+        OnInsanityChanged?.Invoke(CurrentInsanity);
+
+    }
+    public void DecreaseInsanity(float amount)
+    {
+        if (amount <= 0)
+            return;
+
+        CurrentInsanity -= amount;
+        OnInsanityChanged?.Invoke(CurrentInsanity);
     }
 
     // Karma

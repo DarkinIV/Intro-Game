@@ -1,26 +1,34 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-// Fired by ranged weapons. Flies straight, or turns towards the target if the weapon is set to homing.
+// Fired by ranged weapons and ranged enemies. Flies straight, or turns towards the target if it's homing.
 [RequireComponent(typeof(Collider))]
 public class Projectile : MonoBehaviour
 {
     CharacterCombat owner;
     Transform target;
     Collider targetCollider;
-    WeaponItem weapon;
+    float speed;
+    bool homing;
+    float turnSpeed;
     float expireAt;
+
+    // Anyone this already flew through (teammates, or someone who dodged it)
+    HashSet<CharacterStats> passedThrough = new HashSet<CharacterStats>();
 
     void Awake()
     {
         GetComponent<Collider>().isTrigger = true;
     }
 
-    public void Launch(CharacterCombat shooter, Transform lockTarget, WeaponItem firedFrom)
+    public void Launch(CharacterCombat shooter, Transform lockTarget, float flySpeed, float lifetime, bool homesIn, float homingTurnSpeed)
     {
         owner = shooter;
         target = lockTarget;
-        weapon = firedFrom;
-        expireAt = Time.time + weapon.projectileLifetime;
+        speed = flySpeed;
+        homing = homesIn;
+        turnSpeed = homingTurnSpeed;
+        expireAt = Time.time + lifetime;
 
         if (target != null)
             targetCollider = target.GetComponentInChildren<Collider>();
@@ -34,15 +42,15 @@ public class Projectile : MonoBehaviour
             return;
         }
 
-        if (weapon.projectileMode == WeaponItem.ProjectileMode.Homing && target != null)
+        if (homing && target != null)
         {
             // Aim for the middle of their body
             Vector3 aimPoint = targetCollider != null ? targetCollider.bounds.center : target.position + Vector3.up;
             Quaternion wanted = Quaternion.LookRotation(aimPoint - transform.position);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, wanted, weapon.projectileTurnSpeed * Time.fixedDeltaTime);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, wanted, turnSpeed * Time.fixedDeltaTime);
         }
 
-        transform.position += transform.forward * weapon.projectileSpeed * Time.fixedDeltaTime;
+        transform.position += transform.forward * speed * Time.fixedDeltaTime;
     }
 
     void OnTriggerEnter(Collider other)
@@ -61,9 +69,20 @@ public class Projectile : MonoBehaviour
         CharacterStats victim = other.GetComponentInParent<CharacterStats>();
         if (victim != null)
         {
-            // Fly straight through anyone we can't hurt (teammates, someone dodging)
-            if (!owner.CanDamage(victim))
+            if (passedThrough.Contains(victim))
                 return;
+
+            // Fly straight through anyone we can't hurt, and never come back for them.
+            // If it was the target that dodged, stop homing so it doesn't turn round and hit them after the i-frames.
+            if (!owner.CanDamage(victim))
+            {
+                passedThrough.Add(victim);
+
+                if (target != null && target.GetComponentInParent<CharacterStats>() == victim)
+                    target = null;
+
+                return;
+            }
 
             owner.DealDamage(victim);
         }

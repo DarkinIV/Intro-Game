@@ -137,8 +137,7 @@ public class FortuneTellerCombat : PlayerCombat
         // Fate Sealed: marked enemies take extra damage on top of the hit
         if (FateActive && !victim.IsDead && markedEnemies.Contains(victim))
         {
-            int bonus = weapons.CurrentWeapon != null ? weapons.CurrentWeapon.bonusDamage : 0;
-            int extraDamage = Mathf.RoundToInt((GetAttackDamage() + bonus) * (critMultiplier - 1f));
+            int extraDamage = Mathf.RoundToInt((GetAttackDamage() + BonusDamage) * (critMultiplier - 1f));
             DealAbilityDamage(victim, extraDamage, DamageType.Magic);
         }
 

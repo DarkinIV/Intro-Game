@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 574707035b6e3234d8653ea86494dd8c
+timeCreated: 1527788015
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 119876
+  packageName: Fellbeast
+  packageVersion: 1.0
+  assetPath: Assets/Fellbeast/Assets/Prefabs/environment.prefab
+  uploadId: 248992

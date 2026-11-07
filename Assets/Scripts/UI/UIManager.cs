@@ -1,9 +1,11 @@
+using NUnit.Framework;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The main HUD: health, stamina and mana bars, level and experience, karma, potions,
+// The main HUD: health, stamina and mana bars, level and insanity, karma, potions,
 // the ability bar, the interaction prompt and the inventory panel.
 public class UIManager : MonoBehaviour
 {
@@ -36,19 +38,18 @@ public class UIManager : MonoBehaviour
     [SerializeField] float karmaPunchScale = 1.12f;
     [SerializeField] float karmaPunchDuration = 0.18f;
 
-    [Header("Player Progression")]
+    [Header("Insanity")]
     [SerializeField] TMP_Text levelText;
-    [SerializeField] Image experienceFill;
-    [SerializeField] TMP_Text experienceText;   // optional
+    [SerializeField] Image insanityFill;
+    [SerializeField] Image insanityEffects;
+    public List<Sprite> effects = new List<Sprite>();
+
+    [SerializeField] TMP_Text experienceText;
 
     [Header("Progression Feedback")]
-    [SerializeField] float experienceFillDuration = 0.45f;
-    [SerializeField] float levelWrapDuration = 0.22f;
-    [SerializeField] float levelPunchScale = 1.18f;
-    [SerializeField] float levelPunchDuration = 0.22f;
+    [SerializeField] float insanityFillDuration = 0.45f;
 
     [Header("Abilities")]
-    [SerializeField] CooldownDisplay dash;              // optional
     [SerializeField] AbilitySlotUI abilitySlotPrefab;
     [SerializeField] Transform abilitySlotParent;       // a slot gets spawned here for each ability
 
@@ -64,22 +65,19 @@ public class UIManager : MonoBehaviour
     Mana playerMana;
 
     Coroutine shakeRoutine;
-    Coroutine experienceRoutine;
+    Coroutine insanityRoutine;
     Coroutine karmaRoutine;
     Coroutine karmaPunchRoutine;
-    Coroutine levelPunchRoutine;
 
     Vector2 healthBarStartPosition;
-    int displayedExperience;
     int displayedKarma;
-    int displayedLevel;
-    int levelsGained;   // level ups the experience bar still has to show
 
-    RectTransform HealthBarRect => (RectTransform)healthBar.transform;
+    RectTransform healthBarRect;
 
     void Awake()
     {
         instance = this;
+        healthBarRect = healthBar.transform.GetComponent<RectTransform>();
     }
 
     void Start()
@@ -92,13 +90,13 @@ public class UIManager : MonoBehaviour
         playerStats.OnStaminaChanged += UpdatePlayerStamina;
         playerStats.OnStaminaDamaged += OnPlayerStaminaDamaged;
         playerStats.OnPotionsChanged += UpdatePotions;
-        playerStats.OnExperienceChanged += UpdateExperience;
+        playerStats.OnInsanityChanged += UpdateInsanity;
         playerStats.OnLevelChanged += UpdateLevel;
         playerStats.OnKarmaChanged += UpdateKarma;
 
         UpdatePlayerHealth(playerStats.currentHealth, playerStats.maxHealth.Value);
         UpdatePlayerStamina(playerStats.currentStamina, playerStats.maxStamina.Value);
-        healthBarStartPosition = HealthBarRect.anchoredPosition;
+        healthBarStartPosition = healthBarRect.anchoredPosition;
 
         // Only characters with mana get a mana bar
         playerMana = Player.instance.GetComponent<Mana>();
@@ -114,11 +112,9 @@ public class UIManager : MonoBehaviour
         // Set everything straight away at the start, without the animations
         UpdatePotions(playerStats.CurrentHealthPotions, playerStats.MaxHealthPotions);
 
-        displayedLevel = playerStats.CurrentLevel;
-        levelText.text = displayedLevel.ToString();
+        levelText.text = playerStats.CurrentLevel.ToString();
+        insanityFill.fillAmount = playerStats.CurrentInsanity / 100f;
 
-        displayedExperience = playerStats.CurrentExperience;
-        SetExperienceBar(displayedExperience, playerStats.ExperienceToNextLevel);
 
         displayedKarma = playerStats.Karma;
         karmaText.text = displayedKarma.ToString();
@@ -138,7 +134,7 @@ public class UIManager : MonoBehaviour
             playerStats.OnStaminaChanged -= UpdatePlayerStamina;
             playerStats.OnStaminaDamaged -= OnPlayerStaminaDamaged;
             playerStats.OnPotionsChanged -= UpdatePotions;
-            playerStats.OnExperienceChanged -= UpdateExperience;
+            playerStats.OnInsanityChanged -= UpdateInsanity;
             playerStats.OnLevelChanged -= UpdateLevel;
             playerStats.OnKarmaChanged -= UpdateKarma;
         }
@@ -152,8 +148,6 @@ public class UIManager : MonoBehaviour
 
     void Update()
     {
-        UpdateDashCooldown();
-
         if (Input.GetKeyDown(KeyCode.I))
             ToggleInventory();
     }
@@ -209,7 +203,7 @@ public class UIManager : MonoBehaviour
 
     IEnumerator ShakeHealthBar()
     {
-        RectTransform bar = HealthBarRect;
+        RectTransform bar = healthBarRect;
 
         for (float elapsed = 0f; elapsed < shakeDuration; elapsed += Time.unscaledDeltaTime)
         {
@@ -228,77 +222,36 @@ public class UIManager : MonoBehaviour
         potionText.text = current.ToString();
     }
 
-    // Level and experience
+    // Level and insanity
 
     void UpdateLevel(int level)
     {
         levelText.text = level.ToString();
-
-        if (level > displayedLevel)
-        {
-            levelsGained += level - displayedLevel;
-            StartPunch(ref levelPunchRoutine, levelText.rectTransform, levelPunchScale, levelPunchDuration);
-        }
-
-        displayedLevel = level;
     }
 
-    void UpdateExperience(int current, int required)
+    // percent goes from 0 to 100
+    void UpdateInsanity(float percent)
     {
-        if (experienceRoutine != null)
-            StopCoroutine(experienceRoutine);
+        if (insanityRoutine != null)
+            StopCoroutine(insanityRoutine);
 
-        experienceRoutine = StartCoroutine(AnimateExperience(current, required, levelsGained));
-        levelsGained = 0;
+        insanityEffects.sprite = effects[Mathf.RoundToInt(percent / 25)];
+        insanityRoutine = StartCoroutine(FillInsanityBar(percent / 100f));
     }
 
-    IEnumerator AnimateExperience(int targetExperience, int required, int levelUps)
+    // Slides the bar from where it is to the new amount
+    IEnumerator FillInsanityBar(float target)
     {
-        // For each level up, fill the bar to the end first (from empty for any extra levels)
-        for (int i = 0; i < levelUps; i++)
+        float start = insanityFill.fillAmount;
+
+        for (float elapsed = 0f; elapsed < insanityFillDuration; elapsed += Time.unscaledDeltaTime)
         {
-            float from = i == 0 ? experienceFill.fillAmount : 0f;
-            yield return FillExperienceBar(from, 1f, levelWrapDuration);
-            experienceFill.fillAmount = 0f;
-            displayedExperience = 0;
-        }
-
-        // Then fill up to the new amount
-        float startFill = experienceFill.fillAmount;
-        int startExperience = displayedExperience;
-        float targetFill = targetExperience / (float)required;
-
-        for (float elapsed = 0f; elapsed < experienceFillDuration; elapsed += Time.unscaledDeltaTime)
-        {
-            float t = Mathf.SmoothStep(0f, 1f, elapsed / experienceFillDuration);
-
-            experienceFill.fillAmount = Mathf.Lerp(startFill, targetFill, t);
-            displayedExperience = Mathf.RoundToInt(Mathf.Lerp(startExperience, targetExperience, t));
-            SetExperienceText(displayedExperience, required);
-
+            insanityFill.fillAmount = Mathf.Lerp(start, target, Mathf.SmoothStep(0f, 1f, elapsed / insanityFillDuration));
             yield return null;
         }
 
-        displayedExperience = targetExperience;
-        SetExperienceBar(targetExperience, required);
-        experienceRoutine = null;
-    }
-
-    IEnumerator FillExperienceBar(float from, float to, float duration)
-    {
-        for (float elapsed = 0f; elapsed < duration; elapsed += Time.unscaledDeltaTime)
-        {
-            experienceFill.fillAmount = Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, elapsed / duration));
-            yield return null;
-        }
-
-        experienceFill.fillAmount = to;
-    }
-
-    void SetExperienceBar(int current, int required)
-    {
-        experienceFill.fillAmount = current / (float)required;
-        SetExperienceText(current, required);
+        insanityFill.fillAmount = target;
+        insanityRoutine = null;
     }
 
     void SetExperienceText(int current, int required)
@@ -362,25 +315,6 @@ public class UIManager : MonoBehaviour
         }
 
         target.localScale = Vector3.one;
-    }
-
-    // Dash cooldown (only if it's been set up in the inspector)
-    void UpdateDashCooldown()
-    {
-        float remaining = playerController.DashCooldownRemaining;
-        bool coolingDown = remaining > 0f;
-
-        if (dash.fill != null)
-        {
-            dash.fill.fillAmount = remaining / playerController.DashCooldownDuration;
-            dash.fill.enabled = coolingDown;
-        }
-
-        if (dash.timerText != null)
-        {
-            dash.timerText.gameObject.SetActive(coolingDown);
-            dash.timerText.text = remaining.ToString("0.0");
-        }
     }
 
     // Interaction prompt and inventory

@@ -117,7 +117,7 @@ public class CameraController : MonoBehaviour
         // When locked on, point the camera at the enemy
         if (locked)
         {
-            Vector3 toEnemy = lockOnTarget.position + Vector3.up - desiredPivot;
+            Vector3 toEnemy = lockOnTarget.position - desiredPivot;
             float flatDistance = new Vector2(toEnemy.x, toEnemy.z).magnitude;
 
             if (flatDistance > 0.01f)

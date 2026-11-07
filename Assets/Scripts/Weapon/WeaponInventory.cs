@@ -13,7 +13,7 @@ public class WeaponInventory : MonoBehaviour
 
     public WeaponItem CurrentWeapon { get; private set; }
     public GameObject WeaponObject { get; private set; }
-    public WeaponHitbox Hitbox { get; private set; }
+    public Hitbox Hitbox { get; private set; }
     public Transform Muzzle { get; private set; }
 
     bool isPlayer;
@@ -74,7 +74,7 @@ public class WeaponInventory : MonoBehaviour
         WeaponObject.transform.localPosition = Vector3.zero;
         WeaponObject.transform.localRotation = Quaternion.identity;
 
-        Hitbox = WeaponObject.GetComponentInChildren<WeaponHitbox>(true);
+        Hitbox = WeaponObject.GetComponentInChildren<Hitbox>(true);
         if (Hitbox != null)
             Hitbox.Setup(GetComponent<CharacterCombat>());
 

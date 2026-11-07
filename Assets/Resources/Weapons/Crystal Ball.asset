@@ -15,7 +15,6 @@ MonoBehaviour:
   name: Crystal Ball
   icon: {fileID: 0}
   description: A crystal ball that fires tracking orbs of fate.
-  category: 0
   showInInventory: 1
   isStackable: 0
   maxStack: 1
@@ -27,7 +26,7 @@ MonoBehaviour:
   attackRateModifier: 0
   bonusDamage: 2
   attackMoveMultiplier: 0.5
-  projectilePrefab: {fileID: 7638945631581436254, guid: 24188a813ea9de8448b5ffa5bc2d3ba2, type: 3}
+  projectilePrefab: {fileID: 7638945631581436254, guid: 3a84fd2a827d3aa44a265f0cb7e76dd6, type: 3}
   projectileMode: 1
   projectileSpeed: 12
   projectileLifetime: 15

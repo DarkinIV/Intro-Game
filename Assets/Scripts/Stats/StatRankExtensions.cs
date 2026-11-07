@@ -95,9 +95,9 @@ public static class StatRankExtensions
     };
     public static float LevelPace(this StatRank r) => r switch
     {
-        StatRank.S => 2f,
-        StatRank.A => 1.5f,
-        StatRank.B => 1f,
+        StatRank.S => 0.2f,
+        StatRank.A => 0.1f,
+        StatRank.B => 0f,
         StatRank.C => 0,
         _         => 0
     };

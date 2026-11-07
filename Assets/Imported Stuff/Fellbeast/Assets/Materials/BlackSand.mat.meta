@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 828241a2a26e17842ab5bd6342a7c663
+timeCreated: 1527723512
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 119876
+  packageName: Fellbeast
+  packageVersion: 1.0
+  assetPath: Assets/Fellbeast/Assets/Materials/BlackSand.mat
+  uploadId: 248992

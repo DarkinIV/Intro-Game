@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 4445c15fdb1603f41b5ebe02da2963cd
+timeCreated: 1527763210
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 119876
+  packageName: Fellbeast
+  packageVersion: 1.0
+  assetPath: Assets/Fellbeast/Assets/Materials/GreySky.mat
+  uploadId: 248992

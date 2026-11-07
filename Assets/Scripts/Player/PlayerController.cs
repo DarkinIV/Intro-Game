@@ -1,5 +1,4 @@
 // AI use: Helped with writing the jump, slide, and wall climb and some simplification.
-// Owner: (add name)
 
 using System.Collections;
 using System.Collections.Generic;
@@ -30,8 +29,6 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float dashDuration = 0.15f;
     [SerializeField] float dashCooldown = 0.4f;
     [SerializeField] float dashStaminaCost = 20f;
-    [Tooltip("How much of the dash you're invulnerable for, from the start")]
-    [Range(0, 1)][SerializeField] float iframeEndPercent = 0.8f;
 
     [Header("Slide (dash while sprinting)")]
     [SerializeField] float slideDuration = 0.6f;
@@ -62,6 +59,7 @@ public class PlayerController : MonoBehaviour
     PlayerInteractor interactor;
     Camera cam;
     CameraController cameraController;
+    Animator animator;
 
     Vector3 moveDirection;
     Vector3 lastMoveDirection = Vector3.forward;
@@ -78,6 +76,7 @@ public class PlayerController : MonoBehaviour
     float nextDashTime;
     Coroutine dashRoutine;
     HashSet<CharacterCombat> perfectDodgedBy = new HashSet<CharacterCombat>();
+    float dodgeIFramesUntil;
 
     // Sliding
     float slideTimer;
@@ -126,6 +125,7 @@ public class PlayerController : MonoBehaviour
         stats = GetComponent<PlayerStats>();
         combat = GetComponent<PlayerCombat>();
         interactor = GetComponent<PlayerInteractor>();
+        animator = GetComponent<Animator>();
 
         standHeight = controller.height;
         standCenter = controller.center;
@@ -185,6 +185,24 @@ public class PlayerController : MonoBehaviour
         }
 
         HandleAbilityKeys();
+        UpdateMoveAnimation();
+    }
+
+    void UpdateMoveAnimation()
+    {
+        Vector3 velocity = controller.velocity;
+        velocity.y = 0f;
+        bool moving = velocity.magnitude > 0.1f && moveDirection.magnitude > 0.1f;
+
+        float moveState = 0f; //0 idle, 1 walk, 2 run, 3 sprint
+        if (moving)
+            moveState = isSprinting ? 3f : 2f;
+
+        Vector3 direction = moving ? transform.InverseTransformDirection(moveDirection) : Vector3.zero;
+
+        animator.SetFloat("MoveState", moveState, 0.1f, Time.deltaTime);
+        animator.SetFloat("MoveX", direction.x, 0.1f, Time.deltaTime);
+        animator.SetFloat("MoveZ", direction.z, 0.1f, Time.deltaTime);
     }
 
     // The ability keys are set in the character's data
@@ -328,6 +346,8 @@ public class PlayerController : MonoBehaviour
             lastGroundedTime = Time.time;
             airJumpsUsed = 0;
         }
+
+        animator.SetBool("isGrounded", IsGrounded);
     }
 
     // controller.isGrounded flickers on edges so we also check a little below the feet
@@ -379,6 +399,7 @@ public class PlayerController : MonoBehaviour
         verticalVelocity = JumpSpeed;
         lastGroundedTime = -999f;
         IsGrounded = false;
+        animator.SetTrigger("Jump");
     }
 
     void ConsumeJump()
@@ -428,6 +449,8 @@ public class PlayerController : MonoBehaviour
             StopCoroutine(dashRoutine);
         dashRoutine = StartCoroutine(DashMovement(direction));
 
+        animator.SetTrigger("Dash");
+
         OnDashStarted();
     }
 
@@ -436,8 +459,9 @@ public class PlayerController : MonoBehaviour
         IsDashing = true;
         perfectDodgedBy.Clear();
 
-        // Invulnerable for the first part of the dash
-        stats.GrantInvulnerability(dashDuration * iframeEndPercent);
+        // Invulnerable from the start of the dash, for as long as the i-frame stat says
+        dodgeIFramesUntil = Time.time + stats.IFrameDuration;
+        stats.GrantInvulnerability(stats.IFrameDuration);
 
         // Don't keep going up if we dashed during a jump
         verticalVelocity = Mathf.Min(verticalVelocity, 0f);
@@ -462,10 +486,11 @@ public class PlayerController : MonoBehaviour
         IsDashing = false;
     }
 
-    // An enemy hit us while the dash made us invulnerable. Only counts once per enemy per dash.
+    // An enemy hit us while the dash made us invulnerable (the i-frames can last a bit longer than the dash itself).
+    // Only counts once per enemy per dash.
     void HandleHitAvoided(CharacterCombat attacker)
     {
-        if (IsDashing && perfectDodgedBy.Add(attacker))
+        if (Time.time < dodgeIFramesUntil && perfectDodgedBy.Add(attacker))
             OnPerfectDodge(attacker);
     }
 

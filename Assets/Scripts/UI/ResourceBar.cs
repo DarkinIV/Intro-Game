@@ -13,7 +13,7 @@ public class ResourceBar : MonoBehaviour
     [SerializeField] Image fill;
     [SerializeField] Image lostFill;            // the yellow part behind the fill
     [SerializeField] TMP_Text valueText;        // optional
-    [SerializeField] float pixelsPerPoint = 2f;
+    [SerializeField] float pixelsPerPoint = 2f; // 0 keeps the width it has in the canvas (the boss bar)
 
     [Header("Feedback")]
     [SerializeField] float lostHoldTime = 0.2f;
@@ -25,8 +25,11 @@ public class ResourceBar : MonoBehaviour
 
     public void Set(float current, float max)
     {
-        RectTransform rect = (RectTransform)transform;
-        rect.sizeDelta = new Vector2(max * pixelsPerPoint, rect.sizeDelta.y);
+        if (pixelsPerPoint > 0f)
+        {
+            RectTransform rect = (RectTransform)transform;
+            rect.sizeDelta = new Vector2(max * pixelsPerPoint, rect.sizeDelta.y);
+        }
 
         target = current / max;
 

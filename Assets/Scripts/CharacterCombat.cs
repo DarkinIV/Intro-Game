@@ -7,8 +7,9 @@ using UnityEngine;
 // Attacking for both the player and the enemies.
 // Animation events (OpenHitbox, FireProjectile, the combo window) decide when things happen during a swing,
 // and AttackStateBehaviour tells us whether we're in an attack animation at all.
+// Where the hitboxes and projectiles come from is up to each kind of character:
+// PlayerCombat uses the weapon being held, EnemyCombat uses the enemy's own body parts and stats.
 [RequireComponent(typeof(CharacterStats))]
-[RequireComponent(typeof(WeaponInventory))]
 public class CharacterCombat : MonoBehaviour
 {
     // How long the animator gets to actually start the attack after it's pressed
@@ -22,7 +23,6 @@ public class CharacterCombat : MonoBehaviour
 
     protected CharacterStats stats;
     protected Animator animator;
-    protected WeaponInventory weapons;
 
     int activeAttackStates;   // can be 2 for a moment while blending into the next combo hit
     float pendingUntil;       // attack pressed but the animator hasn't started it yet
@@ -34,21 +34,25 @@ public class CharacterCombat : MonoBehaviour
 
     bool Busy => activeAttackStates > 0 || Time.time < pendingUntil;
 
+    // True from pressing attack until the attack animation has finished
+    public bool IsAttacking => Busy;
+
     // From pressing attack until the hit is over you can't move (or only slowly)
     public bool IsMovementLocked => Busy && !recovered;
     // During the hit itself you can't turn or dash
     public bool IsCommitted => committed && !recovered;
-    public float MoveMultiplier => IsMovementLocked && weapons.CurrentWeapon != null ? weapons.CurrentWeapon.attackMoveMultiplier : 1f;
+    public float MoveMultiplier => IsMovementLocked ? AttackMoveMultiplier : 1f;
 
     public event System.Action OnAttack;    // attack was pressed
     public event System.Action OnStrike;    // the hitbox opened or the projectile was fired
     public event System.Action<CharacterStats> OnHit;
 
+    static readonly List<Hitbox> noHitboxes = new List<Hitbox>();
+
     protected virtual void Awake()
     {
         stats = GetComponent<CharacterStats>();
         animator = GetComponentInChildren<Animator>();
-        weapons = GetComponent<WeaponInventory>();
     }
 
     protected virtual void OnEnable()
@@ -75,7 +79,7 @@ public class CharacterCombat : MonoBehaviour
 
     public virtual void TryAttack()
     {
-        if (stats.IsDead || weapons.CurrentWeapon == null)
+        if (stats.IsDead || !IsArmed)
             return;
 
         if (!Busy)
@@ -116,7 +120,7 @@ public class CharacterCombat : MonoBehaviour
     {
         canCombo = false;
         queued = false;
-        CloseHitbox();
+        CloseAllHitboxes();
     }
 
     // Called by AttackStateBehaviour
@@ -168,59 +172,73 @@ public class CharacterCombat : MonoBehaviour
         }
 
         queued = false;
-        CloseHitbox();
+        CloseAllHitboxes();
         animator.SetTrigger(AttackTrigger);
         OnAttack?.Invoke();
     }
 
     // No next hit was queued, so the attack is over
-    void EndAttack()
+    public virtual void EndAttack()
     {
         recovered = true;
         ResetAttackFlags();
         animator.ResetTrigger(AttackTrigger);
     }
 
-    public void OpenHitbox()
+    // The event's text box is optional. Leave it empty to open every hitbox, or type a part
+    // name (like LeftClaw) when an enemy attack hits with different body parts at different times.
+    public void OpenHitbox(string part)
     {
         if (interrupted)
             return;
 
         committed = true;
 
-        if (weapons.Hitbox == null || !ConsumeAttackCost())
+        List<Hitbox> hitboxes = GetHitboxes(part);
+        if (hitboxes.Count == 0 || !ConsumeAttackCost())
             return;
 
-        weapons.Hitbox.StartSwing();
+        foreach (Hitbox hitbox in hitboxes)
+            hitbox.StartSwing();
+
         OnStrike?.Invoke();
     }
 
-    public void CloseHitbox()
+    public void CloseHitbox(string part)
     {
         if (committed)
             recovered = true;
 
-        if (weapons.Hitbox != null)
-            weapons.Hitbox.StopSwing();
+        foreach (Hitbox hitbox in GetHitboxes(part))
+            hitbox.StopSwing();
+    }
+
+    void CloseAllHitboxes()
+    {
+        foreach (Hitbox hitbox in AllHitboxes)
+            hitbox.StopSwing();
     }
 
     public void FireProjectile()
     {
-        WeaponItem weapon = weapons.CurrentWeapon;
-
-        if (interrupted || weapon == null)
+        if (interrupted)
             return;
 
         committed = true;
 
-        if (weapon.attackKind != WeaponItem.AttackKind.Ranged || !ConsumeAttackCost())
+        if (!CanShoot || !ConsumeAttackCost())
             return;
 
-        Vector3 direction = GetAimDirection(weapons.Muzzle.position);
-        GameObject projectile = Instantiate(weapon.projectilePrefab, weapons.Muzzle.position, Quaternion.LookRotation(direction));
-        projectile.GetComponent<Projectile>().Launch(this, Target, weapon);
-
+        Shoot();
         OnStrike?.Invoke();
+    }
+
+    // Used by Shoot in the player and enemy combat scripts
+    protected void LaunchProjectile(GameObject prefab, Transform muzzle, float speed, float lifetime, bool homing, float turnSpeed)
+    {
+        Vector3 direction = GetAimDirection(muzzle.position);
+        GameObject projectile = Instantiate(prefab, muzzle.position, Quaternion.LookRotation(direction));
+        projectile.GetComponent<Projectile>().Launch(this, Target, speed, lifetime, homing, turnSpeed);
     }
 
     protected virtual Vector3 GetAimDirection(Vector3 origin)
@@ -229,6 +247,13 @@ public class CharacterCombat : MonoBehaviour
     }
 
     // Each character's combat script can change these
+    protected virtual bool IsArmed => true;
+    protected virtual float AttackMoveMultiplier => 1f;
+    protected virtual int BonusDamage => 0;
+    protected virtual List<Hitbox> AllHitboxes => noHitboxes;
+    protected virtual List<Hitbox> GetHitboxes(string part) => AllHitboxes;
+    protected virtual bool CanShoot => false;
+    protected virtual void Shoot() { }
     protected virtual bool CanAttack() => true;
     protected virtual bool ConsumeAttackCost() => true;
     protected virtual int GetAttackDamage() => baseDamage;
@@ -265,8 +290,7 @@ public class CharacterCombat : MonoBehaviour
         if (!CanDamage(victim))
             return;
 
-        int bonus = weapons.CurrentWeapon != null ? weapons.CurrentWeapon.bonusDamage : 0;
-        int damage = Mathf.RoundToInt((GetAttackDamage() + bonus) * multiplier);
+        int damage = Mathf.RoundToInt((GetAttackDamage() + BonusDamage) * multiplier);
 
         if (damage <= 0)
             return;

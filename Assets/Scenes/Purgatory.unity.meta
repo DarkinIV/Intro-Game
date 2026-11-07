@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 4166885527fbb864c9595af9395dc8f4
+timeCreated: 1526930170
+licenseType: Store
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 119876
+  packageName: Fellbeast
+  packageVersion: 1.0
+  assetPath: Assets/Fellbeast/Demo/Fellbeast.unity
+  uploadId: 248992
