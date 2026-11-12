@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: befff3b4d816a2f44872d97b316fd52c
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontNames:
+  - Devil Candle Alt PERSONAL USE
+  fallbackFontReferences: []
+  customCharacters: A
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  shouldRoundAdvanceValue: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

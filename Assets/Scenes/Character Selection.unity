@@ -518,6 +518,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Flying beetle
       objectReference: {fileID: 0}
+    - target: {fileID: 1174681552261998, guid: cda9515b23e2f454b9c8d645acee645e, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1174986317429422, guid: cda9515b23e2f454b9c8d645acee645e, type: 3}
       propertyPath: m_IsActive
       value: 1
@@ -7516,6 +7520,10 @@ PrefabInstance:
     - target: {fileID: 3490026887102114920, guid: e0a2ae8d8ae1c1f4b83e337da0b6f6b4, type: 3}
       propertyPath: m_Name
       value: Base mesh MonsterMutant7 skin1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3490026887102114920, guid: e0a2ae8d8ae1c1f4b83e337da0b6f6b4, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3490026887102541824, guid: e0a2ae8d8ae1c1f4b83e337da0b6f6b4, type: 3}
       propertyPath: m_LocalRotation.w

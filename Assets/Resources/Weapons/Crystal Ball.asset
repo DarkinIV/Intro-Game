@@ -28,8 +28,8 @@ MonoBehaviour:
   attackMoveMultiplier: 0.5
   projectilePrefab: {fileID: 7638945631581436254, guid: 3a84fd2a827d3aa44a265f0cb7e76dd6, type: 3}
   projectileMode: 1
-  projectileSpeed: 12
+  projectileSpeed: 7
   projectileLifetime: 15
-  projectileTurnSpeed: 360
+  projectileTurnSpeed: 45
   maxStaminaModifier: 0
   moveSpeedModifier: 0

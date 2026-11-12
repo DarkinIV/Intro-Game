@@ -23,9 +23,11 @@ public class CameraController : MonoBehaviour
     [SerializeField] float followSmoothness = 10f;
 
     [Header("Lock Target")]
+    [SerializeField] GameObject graphic;
     [SerializeField] Vector3 lockOffset = new Vector3(0f, 3f, 0f);
     [SerializeField] float lockMinPitch = -15f;
     [SerializeField] float lockMaxPitch = 25f;
+    [SerializeField] float lockPitchBias = 3f;
     [SerializeField] float lockRotationSmoothness = 7f;
     [SerializeField] float lockFollowSmoothness = 4f;
 
@@ -89,8 +91,8 @@ public class CameraController : MonoBehaviour
             return;
         }
 
-        // The mouse only moves the camera when we're not locked on
-        if (Cursor.lockState == CursorLockMode.Locked && lockOnTarget == null)
+        // The mouse only moves the camera when we're not locked on (or paused)
+        if (Cursor.lockState == CursorLockMode.Locked && lockOnTarget == null && Time.timeScale > 0f)
         {
             targetYaw += Input.GetAxis("Mouse X") * mouseSensitivity;
             targetPitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
@@ -102,6 +104,7 @@ public class CameraController : MonoBehaviour
     {
         if (target == null)
         {
+            graphic.SetActive(false);
             RestoreAll();
             return;
         }
@@ -114,21 +117,31 @@ public class CameraController : MonoBehaviour
 
         Vector3 desiredPivot = target.position + activeOffset;
 
-        // When locked on, point the camera at the enemy
-        if (locked)
-        {
-            Vector3 toEnemy = lockOnTarget.position - desiredPivot;
-            float flatDistance = new Vector2(toEnemy.x, toEnemy.z).magnitude;
-
-            if (flatDistance > 0.01f)
-            {
-                targetYaw = Mathf.Atan2(toEnemy.x, toEnemy.z) * Mathf.Rad2Deg;
-                targetPitch = Mathf.Clamp(Mathf.Atan2(-toEnemy.y, flatDistance) * Mathf.Rad2Deg, lockMinPitch, lockMaxPitch);
-            }
-        }
-
         // Smooth follow and rotation (using Exp so it's the same at any frame rate)
         currentPivot = Vector3.Lerp(currentPivot, desiredPivot, 1f - Mathf.Exp(-followSpeed * Time.deltaTime));
+
+        // When locked on point the camera at the enemy
+        if (locked)
+        {
+            // lockOnTarget should be the enemy's LockOnPoint
+            Vector3 toEnemy = lockOnTarget.position - currentPivot;
+            Vector3 flatDirection = new Vector3(toEnemy.x, 0f, toEnemy.z);
+
+            if (flatDirection.sqrMagnitude > 0.0001f)
+            {
+                // Horizontal angle towards the enemy
+                targetYaw = Mathf.Atan2(flatDirection.x, flatDirection.z) * Mathf.Rad2Deg;
+
+                // Vertical angle based on the height difference
+                float verticalDifference = currentPivot.y - lockOnTarget.position.y;
+
+                float horizontalDistance = flatDirection.magnitude;
+
+                float calculatedPitch = Mathf.Atan2(verticalDifference, horizontalDistance) * Mathf.Rad2Deg;
+
+                targetPitch = Mathf.Clamp(calculatedPitch + lockPitchBias, lockMinPitch, lockMaxPitch);
+            }
+        }
 
         float rotationT = 1f - Mathf.Exp(-rotationSpeed * Time.deltaTime);
         currentYaw = Mathf.LerpAngle(currentYaw, targetYaw, rotationT);
@@ -146,6 +159,10 @@ public class CameraController : MonoBehaviour
 
         transform.position = currentPivot + backwards * currentDistance;
         transform.rotation = rotation;
+
+        graphic.SetActive(locked);
+        if (locked)
+            graphic.transform.position = Camera.main.WorldToScreenPoint(lockOnTarget.position);
 
         UpdateFading();
     }
@@ -271,17 +288,5 @@ public class CameraController : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-    }
-
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, fadeDetectionRadius);
-
-        if (target != null)
-        {
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(target.position + offset, 0.1f);
-        }
     }
 }

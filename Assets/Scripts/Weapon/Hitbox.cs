@@ -60,7 +60,11 @@ public class Hitbox : MonoBehaviour
         if (!active || owner == null)
             return;
 
-        // If the swing touches the Knight's shield first, the shield takes it instead of him
+        // Don't hit other weapon hitboxes
+        if (other.GetComponent<Hitbox>() != null)
+            return;
+
+        // Shields intercept attacks
         Shield shield = other.GetComponent<Shield>();
         if (shield != null)
         {
@@ -69,10 +73,13 @@ public class Hitbox : MonoBehaviour
             return;
         }
 
-        // Everyone only gets checked once per swing. If they were dodging at that moment,
-        // the swing has missed them and can't hit them later when their i-frames run out.
         CharacterStats victim = other.GetComponentInParent<CharacterStats>();
-        if (victim != null && alreadyHit.Add(victim))
+
+        if (victim == null || !owner.IsValidTarget(victim))
+            return;
+
+        // Only check each character once per swing including when they dodge the attack
+        if (alreadyHit.Add(victim))
             owner.DealDamage(victim);
     }
 }

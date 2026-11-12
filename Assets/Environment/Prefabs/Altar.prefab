@@ -34608,7 +34608,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3645080235683684063}
-  m_Layer: 0
+  - component: {fileID: 386842357684814003}
+  m_Layer: 6
   m_Name: Altar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -34634,6 +34635,21 @@ Transform:
   - {fileID: 2223701611473167971}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &386842357684814003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7144693563547594426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a56ae50f47640444b964995e2e6838d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  interactionPrompt: Rest
+  radius: 2
+  interactionTransform: {fileID: 3645080235683684063}
 --- !u!1 &7163591980568284288
 GameObject:
   m_ObjectHideFlags: 0

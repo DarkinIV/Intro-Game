@@ -99,7 +99,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 9125710862102728242}
   - {fileID: 4381560702787898}
   - {fileID: 4918551068491890}
   - {fileID: 3175229234029292339}
@@ -268,7 +267,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6958774627e372d40a7f82b9d63e7ecf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  experienceReward: 25
   karmaReward: 10
 --- !u!114 &9016821547687485060
 MonoBehaviour:
@@ -710,11 +708,11 @@ Transform:
   m_GameObject: {fileID: 6452801941085634661}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.609, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 4226448918716116}
+  m_Father: {fileID: 7733052981369073707}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &7736782942481594081
 PrefabInstance:
@@ -3088,6 +3086,9 @@ PrefabInstance:
     - {fileID: 95986376284878582, guid: cda9515b23e2f454b9c8d645acee645e, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4435083107616458, guid: cda9515b23e2f454b9c8d645acee645e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9125710862102728242}
     - targetCorrespondingSourceObject: {fileID: 4982697197191816, guid: cda9515b23e2f454b9c8d645acee645e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 461979159980903305}
@@ -3125,6 +3126,11 @@ Transform:
 --- !u!4 &7732951983093261285 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4052541617181956, guid: cda9515b23e2f454b9c8d645acee645e, type: 3}
+  m_PrefabInstance: {fileID: 7736782942481594081}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7733052981369073707 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4435083107616458, guid: cda9515b23e2f454b9c8d645acee645e, type: 3}
   m_PrefabInstance: {fileID: 7736782942481594081}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &7735705615490557327 stripped

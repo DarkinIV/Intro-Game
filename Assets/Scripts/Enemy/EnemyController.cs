@@ -217,8 +217,8 @@ public class EnemyController : MonoBehaviour
 
         // Movement relative to where it's facing, so circling sideways plays the strafe animations
         Vector3 localVelocity = transform.InverseTransformDirection(velocity);
-        animator.SetFloat("MoveX", localVelocity.x);
-        animator.SetFloat("MoveZ", localVelocity.z);
+        animator.SetFloat("Horizontal", localVelocity.x);
+        animator.SetFloat("Vertical", localVelocity.z);
     }
 
     // Noticing and losing the player

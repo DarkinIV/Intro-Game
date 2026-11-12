@@ -50,9 +50,13 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float wallJumpPush = 7f;
     [SerializeField] LayerMask wallLayers = ~0;
 
+    [Header("Potion")]
+    [SerializeField] float drinkTime = 2f;   // length of the Drinking animation
+
     [Header("Combat")]
     [SerializeField] float lockOnRange = 12f;
-
+    [SerializeField] float lockLossRange = 24f;
+    
     protected CharacterController controller;
     protected PlayerStats stats;
     protected PlayerCombat combat;
@@ -77,6 +81,7 @@ public class PlayerController : MonoBehaviour
     Coroutine dashRoutine;
     HashSet<CharacterCombat> perfectDodgedBy = new HashSet<CharacterCombat>();
     float dodgeIFramesUntil;
+    float nextDrinkTime;
 
     // Sliding
     float slideTimer;
@@ -157,7 +162,8 @@ public class PlayerController : MonoBehaviour
 
     protected virtual void Update()
     {
-        if (stats.IsDead)
+        // Dead, or the game is paused (a tutorial is open)
+        if (stats.IsDead || Time.timeScale == 0f)
             return;
 
         ReadMoveInput();
@@ -182,6 +188,13 @@ public class PlayerController : MonoBehaviour
 
             if (Input.GetKeyDown(KeyCode.E))
                 interactor.TryInteract();
+
+            // Can't start another drink until this one has finished
+            if (Input.GetKeyDown(KeyCode.Q) && Time.time >= nextDrinkTime && stats.CanDrinkPotion)
+            {
+                nextDrinkTime = Time.time + drinkTime;
+                animator.SetTrigger("Drink");
+            }
         }
 
         HandleAbilityKeys();
@@ -198,11 +211,18 @@ public class PlayerController : MonoBehaviour
         if (moving)
             moveState = isSprinting ? 3f : 2f;
 
-        Vector3 direction = moving ? transform.InverseTransformDirection(moveDirection) : Vector3.zero;
-
         animator.SetFloat("MoveState", moveState, 0.1f, Time.deltaTime);
-        animator.SetFloat("MoveX", direction.x, 0.1f, Time.deltaTime);
-        animator.SetFloat("MoveZ", direction.z, 0.1f, Time.deltaTime);
+        if (lockedTarget)
+        {
+            animator.SetFloat("Horizontal", Input.GetAxis("Horizontal"), 0.1f, Time.deltaTime);
+            animator.SetFloat("Vertical", Input.GetAxis("Vertical"), 0.1f, Time.deltaTime);
+        }
+        else
+        {
+            animator.SetFloat("Horizontal", 0f, 0.1f, Time.deltaTime);
+            animator.SetFloat("Vertical", 0f, 0.1f, Time.deltaTime);
+
+        }
     }
 
     // The ability keys are set in the character's data
@@ -759,7 +779,7 @@ public class PlayerController : MonoBehaviour
         if (lockedTarget != null)
         {
             bool dead = lockedTarget.GetComponentInParent<CharacterStats>().IsDead;
-            bool tooFar = Vector3.Distance(transform.position, lockedTarget.position) > lockOnRange;
+            bool tooFar = Vector3.Distance(transform.position, lockedTarget.position) > lockLossRange;
 
             if (dead || tooFar)
                 lockedTarget = null;

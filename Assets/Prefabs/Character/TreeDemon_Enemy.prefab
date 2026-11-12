@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 1017411069953730}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalPosition: {x: 0, y: 7.5, z: 1.6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -56,7 +56,7 @@ Transform:
   m_GameObject: {fileID: 1066872635305754}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 2.3, z: 0}
+  m_LocalPosition: {x: 0, y: 10.05, z: 3.31}
   m_LocalScale: {x: 1.0000005, y: 1, z: 1.0000005}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -99,7 +99,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 9125710862102728242}
   - {fileID: 4381560702787898}
   - {fileID: 4918551068491890}
   - {fileID: 3175229234029292339}
@@ -218,7 +217,7 @@ MonoBehaviour:
   poiseRecoveryDelay: 2
   poiseRecoveryRate: 15
   staggerTime: 0.7
-  isHeavy: 0
+  isHeavy: 1
   isBoss: 0
   uiAnchor: {fileID: 4918551068491890}
   deathAnimations: 5
@@ -259,7 +258,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6958774627e372d40a7f82b9d63e7ecf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  experienceReward: 25
   karmaReward: 10
 --- !u!114 &9016821547687485060
 MonoBehaviour:
@@ -650,6 +648,7 @@ Transform:
   - {fileID: 7403936859687617604}
   - {fileID: 713702304792786509}
   - {fileID: 8398210904460475244}
+  - {fileID: 9125710862102728242}
   m_Father: {fileID: 3751492026926857081}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1284413539319810716
@@ -1245,6 +1244,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3751492026926857081}
+  - component: {fileID: 3295893216868734950}
   m_Layer: 7
   m_Name: spine
   m_TagString: Untagged
@@ -1268,6 +1268,29 @@ Transform:
   - {fileID: 8981022781146061052}
   m_Father: {fileID: 6694039400505391406}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!136 &3295893216868734950
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2747057257183177905}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.002
+  m_Height: 0.01
+  m_Direction: 1
+  m_Center: {x: 0, y: 0.002, z: 0.001}
 --- !u!1 &2967768889753941417
 GameObject:
   m_ObjectHideFlags: 0
@@ -1530,7 +1553,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7732748406197509661}
-  - component: {fileID: 7077947780749359284}
   m_Layer: 7
   m_Name: Demon
   m_TagString: Untagged
@@ -1555,29 +1577,6 @@ Transform:
   - {fileID: 8881791625267301340}
   m_Father: {fileID: 4226448918716116}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!136 &7077947780749359284
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3648473909183510568}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 1
-  m_Height: 9
-  m_Direction: 1
-  m_Center: {x: 0, y: -1.84, z: -0.72}
 --- !u!1 &3650139942686978004
 GameObject:
   m_ObjectHideFlags: 0
@@ -2085,11 +2084,11 @@ Transform:
   m_GameObject: {fileID: 6452801941085634661}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 6.09, z: 0}
+  m_LocalPosition: {x: 0, y: 0.00116, z: 0.00065}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 4226448918716116}
+  m_Father: {fileID: 8981022781146061052}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7099033190748137371
 GameObject:

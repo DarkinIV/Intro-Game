@@ -266,7 +266,7 @@ public class CharacterCombat : MonoBehaviour
         if (victim == null || victim == stats || stats.IsDead || victim.IsDead)
             return false;
 
-        return !gameObject.CompareTag(victim.gameObject.tag);
+        return !gameObject.CompareTag(victim.tag);
     }
 
     public bool CanDamage(CharacterStats victim)

@@ -1,4 +1,3 @@
-using NUnit.Framework;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -53,12 +52,22 @@ public class UIManager : MonoBehaviour
     [SerializeField] AbilitySlotUI abilitySlotPrefab;
     [SerializeField] Transform abilitySlotParent;       // a slot gets spawned here for each ability
 
+    [Header("Tutorial")]
+    [SerializeField] TutorialSlotUI tutorialSlotPrefab;
+    public List<TutorialData> tutorials = new List<TutorialData>();
+    bool destroyTrigger = false;
+
     [Header("Interaction")]
     [SerializeField] GameObject interactionPanel;
     [SerializeField] TMP_Text interactionText;
 
     [Header("Inventory")]
     [SerializeField] GameObject inventoryPanel;
+
+    [Header("Death and Resting")]
+    [SerializeField] CanvasGroup deathScreen;
+    [SerializeField] CanvasGroup restScreen;
+    [SerializeField] float screenFadeTime = 1f;
 
     PlayerStats playerStats;
     PlayerController playerController;
@@ -120,7 +129,13 @@ public class UIManager : MonoBehaviour
         karmaText.text = displayedKarma.ToString();
 
         HideInteractionPrompt();
+        HideTutorial();
         inventoryPanel.SetActive(false);
+
+        if (deathScreen != null)
+            deathScreen.gameObject.SetActive(false);
+        if (restScreen != null)
+            restScreen.gameObject.SetActive(false);
 
         CreateAbilitySlots();
     }
@@ -152,6 +167,14 @@ public class UIManager : MonoBehaviour
             ToggleInventory();
     }
 
+    // Checked in LateUpdate so the player's scripts have already run this frame while still paused,
+    // that way the E that closes the tutorial doesn't also interact with something
+    void LateUpdate()
+    {
+        if (tutorialSlotPrefab.gameObject.activeSelf && Input.GetKeyDown(KeyCode.E))
+            HideTutorial();
+    }
+
     // One slot for each ability, with the ultimate last
     void CreateAbilitySlots()
     {
@@ -160,6 +183,28 @@ public class UIManager : MonoBehaviour
 
         if (playerStats.Ultimate != null)
             Instantiate(abilitySlotPrefab, abilitySlotParent).Setup(playerStats.Ultimate);
+    }
+
+    // Tutorial
+
+    // The game is paused while a tutorial is open, until the player presses E
+    public void ShowTutorial(int collisionID)
+    {
+        TutorialData tutorial = tutorials[collisionID];
+
+        // Tutorials for one character are skipped for the others
+        if (tutorial.onlyFor != null && tutorial.onlyFor != playerStats.Character)
+            return;
+
+        tutorialSlotPrefab.Setup(tutorial);
+        tutorialSlotPrefab.gameObject.SetActive(true);
+        Time.timeScale = 0f;
+    }
+
+    public void HideTutorial()
+    {
+        tutorialSlotPrefab.gameObject.SetActive(false);
+        Time.timeScale = 1f;
     }
 
     // Bars
@@ -258,6 +303,28 @@ public class UIManager : MonoBehaviour
     {
         if (experienceText != null)
             experienceText.text = current + " / " + required + " XP";
+    }
+
+    // Death and resting
+
+    public void ShowDeathScreen() => StartCoroutine(FadeIn(deathScreen));
+    public void ShowRestScreen() => StartCoroutine(FadeIn(restScreen));
+
+    // Fades a screen in over everything. It never fades back out, because the scene reloads right after.
+    IEnumerator FadeIn(CanvasGroup screen)
+    {
+        if (screen == null)
+            yield break;
+
+        screen.gameObject.SetActive(true);
+
+        for (float elapsed = 0f; elapsed < screenFadeTime; elapsed += Time.unscaledDeltaTime)
+        {
+            screen.alpha = elapsed / screenFadeTime;
+            yield return null;
+        }
+
+        screen.alpha = 1f;
     }
 
     // Karma

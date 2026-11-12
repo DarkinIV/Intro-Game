@@ -8,12 +8,15 @@ public class PlayerStats : CharacterStats
     [Header("Health Potions")]
     [SerializeField] int maxHealthPotions = 3;
     [SerializeField] int startingHealthPotions = 3;
+    [SerializeField] int potionHealAmount = 40;
 
     [Header("Level Progression")]
     [SerializeField] int startingLevel = 1;
 
     [Header("Rogue Settings")]
     [SerializeField] int levelsLostOnDeath = 1;
+    [Range(0f, 1f)]
+    [SerializeField] float karmaLostOnDeath = 0.5f;   // 0.5 means half
 
     [Header("Stamina Regeneration")]
     [SerializeField] float staminaRegenDelay = 0.8f;
@@ -28,7 +31,7 @@ public class PlayerStats : CharacterStats
     [SerializeField] float baseIFrameDuration = 0.3f;
 
     [Header("Selected Character")]
-    [SerializeField] CharacterData selectedCharacter;
+    public CharacterData selectedCharacter;
 
     public int CurrentHealthPotions { get; private set; }
     public int MaxHealthPotions => maxHealthPotions;
@@ -74,6 +77,7 @@ public class PlayerStats : CharacterStats
 
         CurrentLevel = startingLevel;
         CurrentHealthPotions = startingHealthPotions;
+        Karma = RunState.karma;   // kept when the scene reloads after dying or resting
 
         CreateAbilities();
     }
@@ -132,6 +136,19 @@ public class PlayerStats : CharacterStats
     // For upgrades and items, in seconds (negative makes the window shorter)
     public void AddIFrameTime(float seconds) => iFrameBonus += seconds;
     public void RemoveIFrameTime(float seconds) => iFrameBonus -= seconds;
+
+    public bool CanDrinkPotion => !IsDead && CurrentHealthPotions > 0 && currentHealth < maxHealth.Value;
+
+    // Animation Event
+    public void TryDrinkPotion()
+    {
+        if (!CanDrinkPotion)
+            return;
+
+        CurrentHealthPotions--;
+        Heal(potionHealAmount);
+        OnPotionsChanged?.Invoke(CurrentHealthPotions, maxHealthPotions);
+    }
 
     public void AddUltimateCharge(int damageDealt)
     {
@@ -211,6 +228,10 @@ public class PlayerStats : CharacterStats
     {
         for (int i = 0; i < levelsLostOnDeath; i++)
             LevelDown();
+
+        // Lose some of the karma we were carrying
+        Karma -= Mathf.RoundToInt(Karma * karmaLostOnDeath);
+        OnKarmaChanged?.Invoke(Karma);
     }
 
     // Insanity

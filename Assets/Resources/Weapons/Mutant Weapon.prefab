@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 1195381943901711107}
   - component: {fileID: 8692074288934231839}
   - component: {fileID: 815930628969843268}
-  m_Layer: 9
+  m_Layer: 0
   m_Name: Model
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -97,6 +97,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cbd4a76a76430d74692caa417c898cd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  partName: 
 --- !u!136 &815930628969843268
 CapsuleCollider:
   m_ObjectHideFlags: 0

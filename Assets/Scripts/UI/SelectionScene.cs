@@ -61,6 +61,7 @@ public class SelectionScene : MonoBehaviour
             return;
         }
 
+        RunState.Reset();   // a new run starts with no karma and no checkpoint
         SceneManager.LoadScene(mainSceneName);
     }
 }

@@ -29,9 +29,6 @@ public class Projectile : MonoBehaviour
         homing = homesIn;
         turnSpeed = homingTurnSpeed;
         expireAt = Time.time + lifetime;
-
-        if (target != null)
-            targetCollider = target.GetComponentInChildren<Collider>();
     }
 
     void FixedUpdate()
@@ -44,10 +41,8 @@ public class Projectile : MonoBehaviour
 
         if (homing && target != null)
         {
-            // Aim for the middle of their body
-            Vector3 aimPoint = targetCollider != null ? targetCollider.bounds.center : target.position + Vector3.up;
-            Quaternion wanted = Quaternion.LookRotation(aimPoint - transform.position);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, wanted, turnSpeed * Time.fixedDeltaTime);
+            Quaternion targetAim = Quaternion.LookRotation(target.position - transform.position);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetAim, turnSpeed * Time.fixedDeltaTime);
         }
 
         transform.position += transform.forward * speed * Time.fixedDeltaTime;

@@ -23,7 +23,17 @@ public class PlayerSpawner : MonoBehaviour
             return;
         }
 
-        GameObject player = Instantiate(selectedCharacter.playerPrefab, spawnPoint.position, spawnPoint.rotation);
+        Vector3 position = spawnPoint.position;
+        Quaternion rotation = spawnPoint.rotation;
+
+        // Wake up where we last rested, if that was in this scene
+        if (RunState.hasCheckpoint && RunState.checkpointScene == gameObject.scene.name)
+        {
+            position = RunState.checkpointPosition;
+            rotation = RunState.checkpointRotation;
+        }
+
+        GameObject player = Instantiate(selectedCharacter.playerPrefab, position, rotation);
 
         if (cameraController != null)
         {

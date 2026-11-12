@@ -93,8 +93,8 @@ CharacterController:
   serializedVersion: 3
   m_Height: 2
   m_Radius: 0.42
-  m_SlopeLimit: 45
-  m_StepOffset: 0.15
+  m_SlopeLimit: 55
+  m_StepOffset: 0.2
   m_SkinWidth: 0.0001
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
@@ -123,7 +123,6 @@ MonoBehaviour:
   dashDuration: 0.15
   dashCooldown: 0.4
   dashStaminaCost: 20
-  iframeEndPercent: 0.8
   slideDuration: 0.6
   slideBoost: 1.15
   slideStaminaCost: 15
@@ -142,6 +141,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   lockOnRange: 12
+  lockLossRange: 24
   perfectDodgeCharge: 60
   slamSpeed: 28
   slamRecovery: 0.3
@@ -174,11 +174,13 @@ MonoBehaviour:
   maxHealthPotions: 3
   startingHealthPotions: 3
   startingLevel: 1
-  baseExperienceToLevel: 100
-  experienceGrowth: 1.35
   levelsLostOnDeath: 1
+  karmaLostOnDeath: 0.5
   staminaRegenDelay: 0.8
   staminaRegenPerSecond: 20
+  attackInsanityIncreaseAmount: 1
+  damagedInsanityIncreaseAmount: 2
+  baseIFrameDuration: 0.3
   selectedCharacter: {fileID: 11400000, guid: 2ff890a3b4877a54c9850f11fbf24082, type: 2}
 --- !u!114 &114658985731270352
 MonoBehaviour:
@@ -193,6 +195,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerStats: {fileID: 114536092619247222}
+  deathTime: 3
+  restTime: 1.5
 --- !u!95 &-4381301120131222030
 Animator:
   serializedVersion: 7
