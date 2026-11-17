@@ -10,7 +10,6 @@ using UnityEngine.AI;
 //   Recover        a short pause after attacking, the player's chance to hit back
 //   Staggered      ran out of poise from taking hits
 //   Stunned        whip pull, parry
-//   Return         lost the player or got pulled too far from home, walks back and heals
 //   Busy           playing a special animation, like a boss roaring
 //   Dead
 // The attacks are a list on this component, so the same brain works for every enemy.
@@ -20,10 +19,19 @@ using UnityEngine.AI;
 [RequireComponent(typeof(EnemyCombat))]
 public class EnemyController : MonoBehaviour
 {
-    public enum State { Idle, Patrol, Chase, Circle, Attack, Recover, Staggered, Stunned, Busy, Dead }
+    public enum State { Idle, Chase, Circle, Attack, Recover, Staggered, Stunned, Busy, Dead }
 
     // How many enemies can be attacking the player at the same time
     public static int maxAttackers = 2;
+
+    // Animator parameters, turned into numbers once instead of looking up the name every frame
+    static readonly int SpeedParam = Animator.StringToHash("Speed");
+    static readonly int HorizontalParam = Animator.StringToHash("Horizontal");
+    static readonly int VerticalParam = Animator.StringToHash("Vertical");
+    static readonly int StunnedParam = Animator.StringToHash("isStunned");
+    static readonly int StaggerTrigger = Animator.StringToHash("Stagger");
+    static readonly int DeathIDParam = Animator.StringToHash("DeathID");
+    static readonly int DieTrigger = Animator.StringToHash("Die");
 
     public State currentState; // just so you can see what it's doing in the inspector
 
@@ -37,28 +45,31 @@ public class EnemyController : MonoBehaviour
     [SerializeField] float forgetTime = 5f; // gives up after not seeing the player for this long
     [SerializeField] float allyAlertRadius = 8f; // enemies this close join in when one spots the player
 
+    // Run speed and turn speed are on CharacterStats, stopping distance is on the NavMeshAgent
     [Header("Movement")]
-    [SerializeField] float stoppingDistance = 1.5f;
-    [SerializeField] float walkSpeed = 2f;
-    [SerializeField] float rotationSpeed = 10f;
+    [Tooltip("Speed while circling the player, as a fraction of its run speed (Move Speed Base on CharacterStats)")]
+    [Range(0f, 1f)][SerializeField] float walkMultiplier = 0.5f;
 
     [Header("Attacks")]
     [SerializeField] List<EnemyAttack> attacks = new List<EnemyAttack>();
     [SerializeField] float recoveryTime = 0.8f; // pause after every attack
+
+    [Header("Spotting")]
+    [Tooltip("Animator trigger played the first time it sees the player, like a roar. Leave empty for none")]
+    [SerializeField] string spotAnimation;
+    [SerializeField] float spotAnimationTime = 1.5f;
 
     [Header("Group Fights")]
     [SerializeField] bool waitsForTurn = true;
     [SerializeField] float turnRequestDistance = 6f; // asks for a turn once this close to the player
     [SerializeField] float circleDistance = 3.5f; // how far away it waits
     [SerializeField] float turnCooldown = 1.5f; // after its turn, gives the others a chance first
+    [Tooltip("Seconds (min and max) it walks round the player after each attack, like a duel. 0 for never")]
+    [SerializeField] Vector2 circleBetweenAttacks;
 
-    [Header("Poise")]
-    [SerializeField] float maxPoise = 30f;
-    [SerializeField] float poiseRecoveryDelay = 2f; // starts recovering this long after the last hit
-    [SerializeField] float poiseRecoveryRate = 15f; // per second
-    [SerializeField] float staggerTime = 0.7f;
-    [SerializeField] bool isHeavy;
-    [SerializeField] bool isBoss; // no health bar above it, BossPhases shows the big one at the bottom of the screen
+    [Header("Type")]
+    [SerializeField] bool isHeavy; // the whip can't pull it, the Acrobat zips over to it instead
+    [SerializeField] bool isBoss;
 
     [Header("UI")]
     [SerializeField] Transform uiAnchor;
@@ -72,6 +83,9 @@ public class EnemyController : MonoBehaviour
 
     // The enemies that currently have a turn to attack
     static List<EnemyController> attackers = new List<EnemyController>();
+
+    // Shared by every enemy's sight check so it doesn't make a new array each time
+    static RaycastHit[] sightHits = new RaycastHit[8];
 
     NavMeshAgent agent;
     Animator animator;
@@ -88,13 +102,14 @@ public class EnemyController : MonoBehaviour
     float nextTurnTime;
     float circleDirection = 1f;
     float nextCircleFlip;
-    float poise;
-    float lastHurtTime;
-    float staggeredUntil;
-    float busyUntil;
+    float busyUntil; // when the special animation ends
+    float circleUntil;
+    Vector3 lastDestination;
+    bool hasSpottedPlayer;
 
     public bool IsHeavy => isHeavy;
     public bool IsStunned => Time.time < stunnedUntil;
+    public Transform Target => target;
 
     // BossPhases uses these to show and hide the boss health bar
     public event System.Action OnSpottedPlayer;
@@ -114,39 +129,37 @@ public class EnemyController : MonoBehaviour
     {
         allEnemies.Add(this);
         stats.OnDamaged += OnHurt;
+        stats.OnStaggered += Stagger;
     }
 
     void OnDisable()
     {
         allEnemies.Remove(this);
         stats.OnDamaged -= OnHurt;
+        stats.OnStaggered -= Stagger;
         ReleaseTurn();
     }
 
     void Start()
     {
-        agent.speed = stats.GetMoveSpeed();
-        agent.stoppingDistance = stoppingDistance;
-
         // We turn the enemy ourselves so it can face the player while attacking
         agent.updateRotation = false;
 
         homeRotation = transform.rotation;
-        poise = maxPoise;
+
+        // Spread out the sight checks so the enemies don't all raycast on the same frame
+        nextSightCheck = Time.time + Random.value * 0.2f;
 
         stats.OnHealthReachedZero += Die;
 
         if (!isBoss)
             EnemyUIManager.instance.Create(this, uiAnchor);
-
     }
 
     void Update()
     {
         if (currentState == State.Dead)
             return;
-
-        RecoverPoise();
 
         if (IsStunned)
         {
@@ -155,14 +168,8 @@ public class EnemyController : MonoBehaviour
             return;
         }
 
-        if (currentState == State.Staggered && Time.time < staggeredUntil)
-        {
-            UpdateAnimator();
-            return;
-        }
-
-        // Let the roar (or other special animation) play out
-        if (currentState == State.Busy && Time.time < busyUntil)
+        // Let the stagger or special animation (like a boss roar) play out
+        if ((currentState == State.Staggered && stats.IsStaggered) || (currentState == State.Busy && Time.time < busyUntil))
         {
             UpdateAnimator();
             return;
@@ -209,16 +216,16 @@ public class EnemyController : MonoBehaviour
 
     void UpdateAnimator()
     {
-        animator.SetBool("isStunned", IsStunned);
+        animator.SetBool(StunnedParam, IsStunned);
 
         Vector3 velocity = agent.velocity;
         velocity.y = 0f;
-        animator.SetFloat("Speed", velocity.magnitude);
+        animator.SetFloat(SpeedParam, velocity.magnitude);
 
         // Movement relative to where it's facing, so circling sideways plays the strafe animations
         Vector3 localVelocity = transform.InverseTransformDirection(velocity);
-        animator.SetFloat("Horizontal", localVelocity.x);
-        animator.SetFloat("Vertical", localVelocity.z);
+        animator.SetFloat(HorizontalParam, localVelocity.x);
+        animator.SetFloat(VerticalParam, localVelocity.z);
     }
 
     // Noticing and losing the player
@@ -243,7 +250,6 @@ public class EnemyController : MonoBehaviour
 
         if (target == null)
         {
-            // Walking home ignores the player (unless they hit it, see OnHurt)
             if (seen)
                 Notice(player, true);
             return;
@@ -270,7 +276,7 @@ public class EnemyController : MonoBehaviour
         if (distance > detectionRadius)
             return false;
 
-        // Close enough to hear them, whichever way we're facing
+        // Close enough to hear them regardless direction faced
         if (distance <= hearingRadius)
             return true;
 
@@ -278,9 +284,10 @@ public class EnemyController : MonoBehaviour
             return false;
 
         // Anything solid in between blocks the view (characters don't)
-        foreach (RaycastHit hit in Physics.RaycastAll(eyes, toPlayer / distance, distance, sightBlockers, QueryTriggerInteraction.Ignore))
+        int hitCount = Physics.RaycastNonAlloc(eyes, toPlayer / distance, sightHits, distance, sightBlockers, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < hitCount; i++)
         {
-            if (hit.collider.GetComponentInParent<CharacterStats>() == null)
+            if (sightHits[i].collider.GetComponentInParent<CharacterStats>() == null)
                 return false;
         }
 
@@ -297,6 +304,11 @@ public class EnemyController : MonoBehaviour
         currentAttack = null;
         SetState(State.Chase);
         OnSpottedPlayer?.Invoke();
+
+        // Only the first time
+        if (!hasSpottedPlayer && !string.IsNullOrEmpty(spotAnimation))
+            PlayAnimation(spotAnimation, spotAnimationTime);
+        hasSpottedPlayer = true;
 
         if (!alertAllies)
             return;
@@ -318,38 +330,32 @@ public class EnemyController : MonoBehaviour
         OnLostPlayer?.Invoke();
     }
 
-    void OnHurt(int damage)
+    // Getting hit or stunned by the player always gets its attention
+    void NoticeAttacker()
     {
-        // Getting hit always gets its attention, even from behind
         if (target == null && Player.instance != null)
             Notice(Player.instance.transform, true);
-
-        // Hits wear down poise. When it runs out the enemy staggers (not on the killing blow).
-        lastHurtTime = Time.time;
-        if (stats.currentHealth <= 0 || IsStunned || currentState == State.Staggered || currentState == State.Busy)
-            return;
-
-        poise -= damage;
-        if (poise <= 0f)
-            Stagger();
     }
 
+    void OnHurt(int damage)
+    {
+        NoticeAttacker();
+    }
+
+    // It stays staggered for the Stagger Time.
     void Stagger()
     {
-        poise = maxPoise;
-        staggeredUntil = Time.time + staggerTime;
+        Interrupt(State.Staggered);
+        animator.SetTrigger(StaggerTrigger);
+    }
 
+    // Stops whatever it was doing and switches to a stagger, stun or special animation
+    void Interrupt(State state)
+    {
         combat.CancelAttack();
         StopMoving();
         ReleaseTurn();
-        SetState(State.Staggered);
-        animator.SetTrigger("Stagger");
-    }
-
-    void RecoverPoise()
-    {
-        if (Time.time - lastHurtTime >= poiseRecoveryDelay)
-            poise = Mathf.Min(maxPoise, poise + poiseRecoveryRate * Time.deltaTime);
+        SetState(state);
     }
 
     // Taking turns to attack
@@ -418,7 +424,7 @@ public class EnemyController : MonoBehaviour
             currentAttack = PickAttack(distance) ?? PickAttack(-1f);
 
         // With every attack on cooldown it just gets close and waits
-        float range = currentAttack != null ? currentAttack.maxRange : stoppingDistance;
+        float range = currentAttack != null ? currentAttack.maxRange : agent.stoppingDistance;
 
         if (distance > range)
         {
@@ -467,7 +473,15 @@ public class EnemyController : MonoBehaviour
         {
             // Turn over, give someone else a go
             ReleaseTurn();
-            SetState(State.Chase);
+
+            // Duelists back off and walk round the player for a bit before going in again
+            if (circleBetweenAttacks.y > 0f)
+            {
+                circleUntil = Time.time + Random.Range(circleBetweenAttacks.x, circleBetweenAttacks.y);
+                SetState(State.Circle);
+            }
+            else
+                SetState(State.Chase);
         }
     }
 
@@ -484,7 +498,7 @@ public class EnemyController : MonoBehaviour
             return;
         }
 
-        if (TryTakeTurn())
+        if (Time.time >= circleUntil && TryTakeTurn())
         {
             SetState(State.Chase);
             return;
@@ -493,7 +507,7 @@ public class EnemyController : MonoBehaviour
         // Pick a spot circleDistance away from the player and a little to the side, and walk there
         Vector3 away = -toTarget.normalized;
         Vector3 side = Vector3.Cross(Vector3.up, away) * circleDirection;
-        MoveTo(target.position + away * circleDistance + side * 1.5f, walkSpeed);
+        MoveTo(target.position + away * circleDistance + side * 1.5f, stats.GetMoveSpeed() * walkMultiplier);
         TurnTowards(toTarget);
 
         // Change direction every few seconds so it doesn't look robotic
@@ -549,7 +563,13 @@ public class EnemyController : MonoBehaviour
 
         agent.speed = speed;
         agent.isStopped = false;
-        agent.SetDestination(position);
+
+        // Working out a path is slow, so only ask for a new one when the spot has moved a bit (or it has no path)
+        if ((position - lastDestination).sqrMagnitude > 0.25f || (!agent.hasPath && !agent.pathPending))
+        {
+            agent.SetDestination(position);
+            lastDestination = position;
+        }
     }
 
     void StopMoving()
@@ -568,7 +588,7 @@ public class EnemyController : MonoBehaviour
             return;
 
         Quaternion rotation = Quaternion.LookRotation(direction);
-        transform.rotation = Quaternion.Slerp(transform.rotation, rotation, rotationSpeed * speedScale * Time.deltaTime);
+        transform.rotation = Quaternion.Slerp(transform.rotation, rotation, stats.turnSpeed * speedScale * Time.deltaTime);
     }
 
     Vector3 Flat(Vector3 vector)
@@ -586,14 +606,9 @@ public class EnemyController : MonoBehaviour
             return;
 
         stunnedUntil = Mathf.Max(stunnedUntil, Time.time + duration);
-        combat.CancelAttack();
-        StopMoving();
-        ReleaseTurn();
-        SetState(State.Stunned);
-
-        // Getting stunned by the player means it knows where they are
-        if (target == null && Player.instance != null)
-            Notice(Player.instance.transform, true);
+        stats.LockPoise(duration); // hits while it's stunned don't count towards a stagger
+        Interrupt(State.Stunned);
+        NoticeAttacker();
     }
 
     // Moves the enemy along the NavMesh so it doesn't get pulled through walls (whip pull)
@@ -614,11 +629,11 @@ public class EnemyController : MonoBehaviour
             return;
 
         busyUntil = Time.time + duration;
-        combat.CancelAttack();
-        StopMoving();
-        ReleaseTurn();
-        SetState(State.Busy);
-        animator.SetTrigger(trigger);
+        stats.LockPoise(duration); // a boss can't be staggered out of its roar or heal
+        Interrupt(State.Busy);
+
+        if (!string.IsNullOrEmpty(trigger))
+            animator.SetTrigger(trigger);
     }
 
     public void SetAttacks(List<EnemyAttack> newAttacks)
@@ -643,10 +658,10 @@ public class EnemyController : MonoBehaviour
             col.enabled = false;
 
         // isStunned off first, otherwise the animator jumps back to the stunned animation
-        animator.SetBool("isStunned", false);
-        animator.ResetTrigger("Stagger");
-        animator.SetFloat("DeathID", Random.Range(0, deathAnimations));
-        animator.SetTrigger("Die");
+        animator.SetBool(StunnedParam, false);
+        animator.ResetTrigger(StaggerTrigger);
+        animator.SetFloat(DeathIDParam, Random.Range(0, deathAnimations));
+        animator.SetTrigger(DieTrigger);
 
         Destroy(gameObject, corpseTime);
     }
@@ -668,6 +683,5 @@ public class EnemyController : MonoBehaviour
 
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(transform.position, circleDistance);
-
     }
 }

@@ -27,7 +27,9 @@ public class PlayerDebugHUD : MonoBehaviour
         if (stats.Ultimate != null)
             text += "\nUlt " + Mathf.RoundToInt(stats.Ultimate.ChargePercent * 100f) + "%";
 
-        if (player.IsInvulnerable) text += "\nI-FRAMES";
+        text += "\nPoise " + stats.CurrentPoise + "/" + stats.maxPoise.Value;
+        if (stats.IsStaggered) text += "\nSTAGGERED";
+        if (stats.IsInvulnerable) text += "\nI-FRAMES";
         if (player.IsDashing) text += "\nDashing";
         if (player.IsSliding) text += "\nSliding";
         if (player.IsWallRunning) text += "\nWall run";

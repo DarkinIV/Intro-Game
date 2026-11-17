@@ -328,5 +328,4 @@ Shader "Standard Double Sided"
 
 
 	FallBack "VertexLit"
-	CustomEditor "StandardShaderGUI"
 }

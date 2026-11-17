@@ -1,0 +1,11 @@
+Model Information:
+* title:	Mountain Dragon
+* source:	https://sketchfab.com/3d-models/mountain-dragon-0a0665396f634b0e9d0872720087f52c
+* author:	Alexey Zaika (https://sketchfab.com/lexazaixa25)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Mountain Dragon" (https://sketchfab.com/3d-models/mountain-dragon-0a0665396f634b0e9d0872720087f52c) by Alexey Zaika (https://sketchfab.com/lexazaixa25) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

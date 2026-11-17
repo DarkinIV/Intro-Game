@@ -19,7 +19,6 @@ MonoBehaviour:
   isStackable: 0
   maxStack: 1
   equipSlot: 0
-  damageModifier: 0
   weaponPrefab: {fileID: 0}
   attackKind: 0
   attackStaminaCost: 15

@@ -11,6 +11,20 @@ using UnityEngine;
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
+    // Animator parameters, turned into numbers once instead of looking up the name every frame
+    static readonly int MoveStateParam = Animator.StringToHash("MoveState");
+    static readonly int HorizontalParam = Animator.StringToHash("Horizontal");
+    static readonly int VerticalParam = Animator.StringToHash("Vertical");
+    static readonly int GroundedParam = Animator.StringToHash("isGrounded");
+    static readonly int JumpTrigger = Animator.StringToHash("Jump");
+    static readonly int DashTrigger = Animator.StringToHash("Dash");
+    static readonly int DrinkTrigger = Animator.StringToHash("Drink");
+    static readonly int StaggerTrigger = Animator.StringToHash("Stagger");
+
+    // Reused by the ground, wall and ceiling checks so they don't make new arrays every frame
+    static RaycastHit[] castHits = new RaycastHit[16];
+    static Collider[] overlapHits = new Collider[16];
+
     [Header("Movement")]
     [SerializeField] float sprintMultiplier = 1.5f;
     [SerializeField] float sprintStaminaPerSecond = 15f;
@@ -70,6 +84,8 @@ public class PlayerController : MonoBehaviour
     float verticalVelocity;
     bool isSprinting;
     Transform lockedTarget;
+    CharacterStats lockedEnemyStats; // the locked enemy's stats, so we don't look them up every frame
+    float nextDrinkTime;
 
     // Jumping
     float lastGroundedTime = -999f;
@@ -81,7 +97,6 @@ public class PlayerController : MonoBehaviour
     Coroutine dashRoutine;
     HashSet<CharacterCombat> perfectDodgedBy = new HashSet<CharacterCombat>();
     float dodgeIFramesUntil;
-    float nextDrinkTime;
 
     // Sliding
     float slideTimer;
@@ -110,8 +125,7 @@ public class PlayerController : MonoBehaviour
     public bool ExternalControl { get; private set; }
 
     public bool IsOnWall => IsWallRunning || IsWallClimbing;
-    public bool IsBusy => ExternalControl || IsDashing || IsSliding || IsOnWall;
-    public bool IsInvulnerable => stats.IsInvulnerable;
+    public bool IsBusy => ExternalControl || IsDashing || IsSliding || IsOnWall || stats.IsStaggered;
     public Transform LockTarget => lockedTarget;
     public Vector3 MoveDirection => moveDirection;
     public int AirJumpsLeft => Mathf.Max(0, stats.AirJumps - airJumpsUsed);
@@ -145,11 +159,13 @@ public class PlayerController : MonoBehaviour
     protected virtual void OnEnable()
     {
         stats.OnHitAvoided += HandleHitAvoided;
+        stats.OnStaggered += Stagger;
     }
 
     protected virtual void OnDisable()
     {
         stats.OnHitAvoided -= HandleHitAvoided;
+        stats.OnStaggered -= Stagger;
 
         CancelDash();
         if (IsSliding)
@@ -193,7 +209,7 @@ public class PlayerController : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.Q) && Time.time >= nextDrinkTime && stats.CanDrinkPotion)
             {
                 nextDrinkTime = Time.time + drinkTime;
-                animator.SetTrigger("Drink");
+                animator.SetTrigger(DrinkTrigger);
             }
         }
 
@@ -211,32 +227,34 @@ public class PlayerController : MonoBehaviour
         if (moving)
             moveState = isSprinting ? 3f : 2f;
 
-        animator.SetFloat("MoveState", moveState, 0.1f, Time.deltaTime);
+        animator.SetFloat(MoveStateParam, moveState, 0.1f, Time.deltaTime);
         if (lockedTarget)
         {
-            animator.SetFloat("Horizontal", Input.GetAxis("Horizontal"), 0.1f, Time.deltaTime);
-            animator.SetFloat("Vertical", Input.GetAxis("Vertical"), 0.1f, Time.deltaTime);
+            animator.SetFloat(HorizontalParam, Input.GetAxis("Horizontal"), 0.1f, Time.deltaTime);
+            animator.SetFloat(VerticalParam, Input.GetAxis("Vertical"), 0.1f, Time.deltaTime);
         }
         else
         {
-            animator.SetFloat("Horizontal", 0f, 0.1f, Time.deltaTime);
-            animator.SetFloat("Vertical", 0f, 0.1f, Time.deltaTime);
-
+            animator.SetFloat(HorizontalParam, 0f, 0.1f, Time.deltaTime);
+            animator.SetFloat(VerticalParam, 0f, 0.1f, Time.deltaTime);
         }
     }
 
     // The ability keys are set in the character's data
     void HandleAbilityKeys()
     {
+        // No abilities while staggered and held ones stop
+        bool canAct = !stats.IsStaggered;
+
         foreach (Ability ability in stats.Abilities)
         {
             if (ability is ChanneledAbility channel)
-                UpdateChannel(channel, channel.Tick(Input.GetKey(channel.Key) && CanChannel(channel)));
-            else if (Input.GetKeyDown(ability.Key))
+                UpdateChannel(channel, channel.Tick(canAct && Input.GetKey(channel.Key) && CanChannel(channel)));
+            else if (canAct && Input.GetKeyDown(ability.Key))
                 ability.TryUse(this);
         }
 
-        if (stats.Ultimate != null && Input.GetKeyDown(stats.Ultimate.Key))
+        if (canAct && stats.Ultimate != null && Input.GetKeyDown(stats.Ultimate.Key))
             stats.Ultimate.TryUse(this);
     }
 
@@ -259,10 +277,11 @@ public class PlayerController : MonoBehaviour
         if (moveDirection.magnitude > 1)
             moveDirection.Normalize();
 
-        if (MovementBlocked)
+        // Meditating or reeling from a stagger
+        if (MovementBlocked || stats.IsStaggered)
             moveDirection = Vector3.zero;
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Space) && !stats.IsStaggered)
             lastJumpPressedTime = Time.time;
     }
 
@@ -276,7 +295,7 @@ public class PlayerController : MonoBehaviour
 
         HandleJump();
 
-        if (!combat.IsCommitted)
+        if (!combat.IsCommitted && !stats.IsStaggered)
         {
             // Face the locked enemy, unless we're sprinting away
             if (lockedTarget != null && !isSprinting)
@@ -323,7 +342,7 @@ public class PlayerController : MonoBehaviour
             return;
 
         Quaternion rotation = Quaternion.LookRotation(direction);
-        transform.rotation = Quaternion.Slerp(transform.rotation, rotation, stats.turnSpeed.Value * Time.deltaTime);
+        transform.rotation = Quaternion.Slerp(transform.rotation, rotation, stats.turnSpeed * Time.deltaTime);
     }
 
     void MoveWithGravity(Vector3 horizontalVelocity)
@@ -367,7 +386,7 @@ public class PlayerController : MonoBehaviour
             airJumpsUsed = 0;
         }
 
-        animator.SetBool("isGrounded", IsGrounded);
+        animator.SetBool(GroundedParam, IsGrounded);
     }
 
     // controller.isGrounded flickers on edges so we also check a little below the feet
@@ -379,9 +398,10 @@ public class PlayerController : MonoBehaviour
         Vector3 bottomSphere = transform.position + controller.center - Vector3.up * (controller.height * 0.5f - controller.radius);
         float distance = groundCheckDistance + controller.skinWidth;
 
-        foreach (RaycastHit hit in Physics.SphereCastAll(bottomSphere, controller.radius * 0.9f, Vector3.down, distance, ~0, QueryTriggerInteraction.Ignore))
+        int hitCount = Physics.SphereCastNonAlloc(bottomSphere, controller.radius * 0.9f, Vector3.down, castHits, distance, ~0, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < hitCount; i++)
         {
-            if (!hit.transform.IsChildOf(transform))
+            if (!castHits[i].transform.IsChildOf(transform))
                 return true;
         }
 
@@ -419,7 +439,7 @@ public class PlayerController : MonoBehaviour
         verticalVelocity = JumpSpeed;
         lastGroundedTime = -999f;
         IsGrounded = false;
-        animator.SetTrigger("Jump");
+        animator.SetTrigger(JumpTrigger);
     }
 
     void ConsumeJump()
@@ -431,7 +451,7 @@ public class PlayerController : MonoBehaviour
 
     void Dash()
     {
-        if (IsDashing || IsSliding || ExternalControl || combat.IsCommitted || Time.time < nextDashTime)
+        if (IsDashing || IsSliding || ExternalControl || combat.IsCommitted || stats.IsStaggered || Time.time < nextDashTime)
             return;
 
         // Pressing dash while sprinting does a slide instead
@@ -469,7 +489,7 @@ public class PlayerController : MonoBehaviour
             StopCoroutine(dashRoutine);
         dashRoutine = StartCoroutine(DashMovement(direction));
 
-        animator.SetTrigger("Dash");
+        animator.SetTrigger(DashTrigger);
 
         OnDashStarted();
     }
@@ -514,11 +534,24 @@ public class PlayerController : MonoBehaviour
             OnPerfectDodge(attacker);
     }
 
+    void Stagger()
+    {
+        combat.CancelAttack();
+        CancelDash();
+        if (IsSliding)
+            EndSlide();
+        if (IsOnWall)
+            EndWall();
+
+        isSprinting = false;
+        animator.SetTrigger(StaggerTrigger);
+    }
+
     // Sliding
 
     void TryStartSlide()
     {
-        if (!stats.TrySpendStamina(slideStaminaCost * stats.TraversalStaminaMultiplier))
+        if (!stats.TrySpendStamina(slideStaminaCost))
             return;
 
         combat.CancelAttack();
@@ -565,9 +598,10 @@ public class PlayerController : MonoBehaviour
         Vector3 bottom = transform.position + standCenter - Vector3.up * (standHeight * 0.5f - radius);
         Vector3 top = transform.position + standCenter + Vector3.up * (standHeight * 0.5f - radius);
 
-        foreach (Collider hit in Physics.OverlapCapsule(bottom, top, radius * 0.95f, ~0, QueryTriggerInteraction.Ignore))
+        int hitCount = Physics.OverlapCapsuleNonAlloc(bottom, top, radius * 0.95f, overlapHits, ~0, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < hitCount; i++)
         {
-            if (!hit.transform.IsChildOf(transform))
+            if (!overlapHits[i].transform.IsChildOf(transform))
                 return false;
         }
 
@@ -629,21 +663,28 @@ public class PlayerController : MonoBehaviour
         return wall == lastWall && Time.time - lastWallJumpTime < 0.5f;
     }
 
+    // Finds the closest wall in that direction
     bool FindWall(Vector3 from, Vector3 direction, float reach, out RaycastHit wallHit)
     {
-        foreach (RaycastHit hit in Physics.RaycastAll(from, direction, reach, wallLayers, QueryTriggerInteraction.Ignore))
+        wallHit = new RaycastHit();
+        bool found = false;
+
+        int hitCount = Physics.RaycastNonAlloc(from, direction, castHits, reach, wallLayers, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < hitCount; i++)
         {
+            RaycastHit hit = castHits[i];
+
             // Skip ourselves, other characters and anything that isn't upright enough to be a wall
             if (hit.transform.IsChildOf(transform)) continue;
-            if (hit.collider.GetComponentInParent<CharacterStats>() != null) continue;
             if (Mathf.Abs(hit.normal.y) > 0.3f) continue;
+            if (found && hit.distance >= wallHit.distance) continue;
+            if (hit.collider.GetComponentInParent<CharacterStats>() != null) continue;
 
             wallHit = hit;
-            return true;
+            found = true;
         }
 
-        wallHit = new RaycastHit();
-        return false;
+        return found;
     }
 
     void BeginWall(RaycastHit hit, bool climbing, float speed, Vector3 alongDirection)
@@ -662,7 +703,7 @@ public class PlayerController : MonoBehaviour
     void ContinueWall()
     {
         wallTimer += Time.deltaTime;
-        stats.TrySpendStamina(wallStaminaPerSecond * stats.TraversalStaminaMultiplier * Time.deltaTime, false);
+        stats.TrySpendStamina(wallStaminaPerSecond * Time.deltaTime, false);
 
         if (JumpBuffered)
         {
@@ -720,7 +761,7 @@ public class PlayerController : MonoBehaviour
         lastWall = currentWall;
         lastWallJumpTime = Time.time;
 
-        // Push away from the wall, and keep some of the speed if we were running along it
+        // Push away from the wall and keep some of the speed if we were running along it
         Vector3 push = wallNormal * wallJumpPush;
         if (IsWallRunning)
             push += wallDirection * wallSpeed * 0.6f;
@@ -728,7 +769,7 @@ public class PlayerController : MonoBehaviour
         EndWall();
         ConsumeJump();
         verticalVelocity = JumpSpeed;
-        airJumpsUsed = 0;
+        airJumpsUsed = 0; //double jump is available again after a wall jump
 
         transform.rotation = Quaternion.LookRotation(new Vector3(wallNormal.x, 0f, wallNormal.z));
 
@@ -741,11 +782,10 @@ public class PlayerController : MonoBehaviour
         IsWallRunning = false;
         IsWallClimbing = false;
         currentWall = null;
-        nextWallTime = Time.time + 0.2f;
+        nextWallTime = Time.time + 0.2f; //tiny wait before grabbing another wall
     }
 
     // For abilities that move the player themselves (like the Acrobat's zip and slam)
-
     protected void BeginExternalControl()
     {
         CancelDash();
@@ -778,17 +818,23 @@ public class PlayerController : MonoBehaviour
         // Drop the lock if the enemy died or got too far away
         if (lockedTarget != null)
         {
-            bool dead = lockedTarget.GetComponentInParent<CharacterStats>().IsDead;
             bool tooFar = Vector3.Distance(transform.position, lockedTarget.position) > lockLossRange;
 
-            if (dead || tooFar)
-                lockedTarget = null;
+            if (lockedEnemyStats.IsDead || tooFar)
+                SetLockTarget(null);
         }
+    }
+
+    // The camera and combat need to know the target too, so they're all set here together
+    void SetLockTarget(Transform target)
+    {
+        lockedTarget = target;
+        lockedEnemyStats = target != null ? target.GetComponentInParent<CharacterStats>() : null;
 
         if (cameraController != null)
-            cameraController.lockOnTarget = lockedTarget;
+            cameraController.lockOnTarget = target;
 
-        combat.Target = lockedTarget;
+        combat.Target = target;
     }
 
     // Locks on to the enemy closest to the middle of the screen
@@ -796,10 +842,11 @@ public class PlayerController : MonoBehaviour
     {
         if (lockedTarget != null)
         {
-            lockedTarget = null;
+            SetLockTarget(null);
             return;
         }
 
+        Transform closest = null;
         float closestToCentre = Mathf.Infinity;
 
         foreach (EnemyCombat enemy in FindObjectsByType<EnemyCombat>(FindObjectsSortMode.None))
@@ -821,9 +868,11 @@ public class PlayerController : MonoBehaviour
             if (distanceToCentre < closestToCentre)
             {
                 closestToCentre = distanceToCentre;
-                lockedTarget = enemy.lockOnTransform;
+                closest = enemy.lockOnTransform;
             }
         }
+
+        SetLockTarget(closest);
     }
 
     // Each character overrides these for its own moves

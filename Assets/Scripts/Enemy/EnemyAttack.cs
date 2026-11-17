@@ -27,6 +27,8 @@ public class EnemyAttack
     [Tooltip("Seconds the enemy keeps turning towards the player after starting. After this the attack is locked in, so the player can dodge to the side")]
     public float trackTime = 0.4f;
     public float damageMultiplier = 1f;
+    [Tooltip("How fast the animation plays, 0.5 is half speed. Needs AttackSpeed as the attack state's speed multiplier")]
+    public float animationSpeed = 1f;
 
     [System.NonSerialized] public float readyTime;
 

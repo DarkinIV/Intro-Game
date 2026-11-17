@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Gives the player experience and karma when this enemy dies
+// Gives the player karma when this enemy dies
 [RequireComponent(typeof(CharacterStats))]
 public class EnemyRewards : MonoBehaviour
 {

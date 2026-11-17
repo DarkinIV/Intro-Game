@@ -27,21 +27,37 @@ public class CharacterStats : MonoBehaviour
     public float currentStamina { get; protected set; }
 
     [Header("Combat")]
-    public Stat strength;           // melee damage
-    public Stat magic;              // spell damage
-    public float attackRate = 1f;   // attacks per second
+    public Stat strength; // melee damage (and the damage of every enemy attack)
+    public Stat magic; // spell damage
 
     [Header("Movement")]
-    public float moveSpeedBase;     // set from the Pace rank and level ups
-    float moveSpeedFlat;            // bonus from weapons
-    float moveSpeedPct;             // percent changes, like the Fool's curse
-    public Stat turnSpeed;
+    public float moveSpeedBase; // set from the Pace rank and level ups
+    float moveSpeedFlat; // bonus from weapons
+    float moveSpeedPct; // percent changes, like the Fool's curse
+    public float turnSpeed = 10f; // how quickly it turns to face a new direction
+
+    [Header("Poise")]
+    [Tooltip("How much damage from hits it can take before it staggers. 0 means it never staggers")]
+    public Stat maxPoise;
+    [Tooltip("Poise goes back to full after this many seconds without being hit")]
+    public float poiseResetTime = 10f;
+    [Tooltip("How long a stagger lasts")]
+    public float staggerTime = 0.6f;
 
     public bool IsDead { get; private set; }
     public bool IsInvulnerable => Time.time < invulnerableUntil;
+    public bool IsStaggered => Time.time < staggeredUntil;
+
+    // Full again once it hasn't been hit for poiseResetTime
+    public int CurrentPoise => Time.time - lastPoiseHitTime >= poiseResetTime ? maxPoise.Value : poise;
 
     float invulnerableUntil;
     IDamageInterceptor[] damageInterceptors;
+
+    int poise;
+    float lastPoiseHitTime = -999f;
+    float staggeredUntil;
+    float poiseLockedUntil;
 
     public event System.Action<int, int> OnHealthChanged;
     public event System.Action<float, int> OnStaminaChanged;
@@ -50,6 +66,8 @@ public class CharacterStats : MonoBehaviour
     public event System.Action<int, DamageType> OnDamageTaken;
     public event System.Action OnHealthReachedZero;
 
+    public event System.Action OnStaggered;
+
     // An attack hit us while we were invulnerable (used for perfect dodges)
     public event System.Action<CharacterCombat> OnHitAvoided;
 
@@ -57,10 +75,10 @@ public class CharacterStats : MonoBehaviour
     {
         currentHealth = maxHealth.Value;
         currentStamina = maxStamina.Value;
+        poise = maxPoise.Value;
         damageInterceptors = GetComponents<IDamageInterceptor>();
     }
 
-    public virtual float GetAttackSpeed() => attackRate;
     public float GetMoveSpeed() => (moveSpeedBase + moveSpeedFlat) * (1f + moveSpeedPct);
 
     public void AddPaceFlat(float amount) => moveSpeedFlat += amount;
@@ -103,7 +121,35 @@ public class CharacterStats : MonoBehaviour
         {
             IsDead = true;
             OnHealthReachedZero?.Invoke();
+            return;
         }
+
+        // Only hits from a character wear down poise, not things like lava
+        if (attacker != null)
+            LosePoise(amount);
+    }
+
+    void LosePoise(int amount)
+    {
+        // No poise at all or still reeling from the last stagger (so it can't be stagger locked)
+        if (maxPoise.Value <= 0 || IsStaggered || Time.time < poiseLockedUntil)
+            return;
+
+        poise = CurrentPoise - amount;
+        lastPoiseHitTime = Time.time;
+
+        if (poise <= 0)
+        {
+            poise = maxPoise.Value;
+            staggeredUntil = Time.time + staggerTime;
+            OnStaggered?.Invoke();
+        }
+    }
+
+    // Hits don't wear down poise for a while (like during a stun)
+    public void LockPoise(float seconds)
+    {
+        poiseLockedUntil = Mathf.Max(poiseLockedUntil, Time.time + seconds);
     }
 
     public void Heal(int amount)

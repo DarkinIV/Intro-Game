@@ -1,32 +1,43 @@
 // AI use: Claude (Anthropic) wrote the attack list support, body-part hitboxes, enemy stats and projectiles.
-// Owner: (add name)
 
 using System.Collections.Generic;
 using UnityEngine;
 
 // Enemy attacks. EnemyController picks which attack to do, this plays it.
-// Enemies don't need a weapon: their damage is set here, and their hitboxes are Hitbox
+// Enemies don't need a weapon: their damage is their Strength, and their hitboxes are Hitbox
 // components anywhere on their body (jaw, claws, spikes...), each with a part name.
 // It also lets the player's scripts know whenever any enemy starts an attack.
 public class EnemyCombat : CharacterCombat
 {
+    [System.Serializable]
+    public class ProjectileSettings
+    {
+        public GameObject prefab;
+        public Transform muzzle;               // where the projectile comes out
+        public float speed = 12f;
+        public float lifetime = 4f;
+        public bool homing;
+        public float turnSpeed = 180f;
+    }
+
     // Used by the Acrobat's auto dodge and the Fortune Teller's foresight
     public static event System.Action<EnemyCombat> OnAnyEnemyAttack;
 
+    static readonly int AttackIDParam = Animator.StringToHash("AttackID");
+
     public Transform lockOnTransform;
 
-    [Header("Stats")]
+    // How hard it hits is Strength on CharacterStats, times the attack's damage multiplier
+    [Header("Damage")]
     [SerializeField] DamageType damageType = DamageType.Physical;
 
     [Header("Projectile (ranged enemies)")]
-    [SerializeField] GameObject projectilePrefab;
-    [SerializeField] Transform muzzle;               // where the projectile comes out
-    [SerializeField] float projectileSpeed = 12f;
-    [SerializeField] float projectileLifetime = 4f;
-    [SerializeField] bool homing;
-    [SerializeField] float projectileTurnSpeed = 180f;
+    [SerializeField] ProjectileSettings projectile = new ProjectileSettings();
 
-    [SerializeField] EnemyAttack currentAttack;
+    // Set by BossPhases while the game runs
+    public float attackSpeedMultiplier = 1f;
+
+    float damageMultiplier = 1f; // from the attack being played
     List<Hitbox> hitboxes;
     List<Hitbox> chosenHitboxes = new List<Hitbox>();
 
@@ -50,30 +61,30 @@ public class EnemyCombat : CharacterCombat
     // Picks the animation for this attack (AttackID) and starts it
     public void StartAttack(EnemyAttack attack)
     {
-        currentAttack = attack;
-        animator.SetFloat("AttackID", attack.animationID);
+        damageMultiplier = attack.damageMultiplier;
+        animator.SetFloat(AttackIDParam, attack.animationID);
+        animator.SetFloat(AttackSpeedParam, attack.animationSpeed * attackSpeedMultiplier);
         TryAttack();
     }
 
     protected override int GetAttackDamage()
     {
-        float multiplier = currentAttack != null ? currentAttack.damageMultiplier : 1f;
-        return Mathf.RoundToInt(baseDamage * multiplier);
+        return Mathf.RoundToInt(stats.strength.Value * damageMultiplier);
     }
 
-    protected override void OnSuccessfulHit(CharacterStats target, int damageDealt) 
+    protected override void OnSuccessfulHit(CharacterStats target, int damageDealt)
     {
-        PlayerStats playerStats = target.GetComponent<PlayerStats>();
-        playerStats.IncreaseInsanity(playerStats.damagedInsanityIncreaseAmount); // Enemies hitting the player increases insanity
+        // Enemies hitting the player increases insanity
+        if (target is PlayerStats player)
+            player.IncreaseInsanity(player.damagedInsanityIncreaseAmount);
     }
 
-    // Every hitbox on the enemy. Found the first time they're needed,
-    // so a weapon spawned at the start (by a WeaponInventory) is found too.
+    // Every hitbox on the enemy, found once the first time they're needed
     protected override List<Hitbox> AllHitboxes
     {
         get
         {
-            if (hitboxes == null || hitboxes.Count == 0)
+            if (hitboxes == null)
             {
                 hitboxes = new List<Hitbox>(GetComponentsInChildren<Hitbox>(true));
                 foreach (Hitbox hitbox in hitboxes)
@@ -84,8 +95,8 @@ public class EnemyCombat : CharacterCombat
         }
     }
 
-    // The part name typed into the animation event picks the hitbox (like LeftHand).
-    // Leaving it empty uses all of them, which is fine for enemies with only one.
+    // The part name typed into the animation event picks the hitbox
+    // empty means use all of them
     protected override List<Hitbox> GetHitboxes(string part)
     {
         if (string.IsNullOrEmpty(part))
@@ -102,11 +113,12 @@ public class EnemyCombat : CharacterCombat
         return chosenHitboxes;
     }
 
-    protected override bool CanShoot => projectilePrefab != null;
+    protected override bool CanShoot => projectile.prefab != null;
 
     protected override void Shoot()
     {
-        LaunchProjectile(projectilePrefab, muzzle != null ? muzzle : transform, projectileSpeed, projectileLifetime, homing, projectileTurnSpeed);
+        Transform muzzle = projectile.muzzle != null ? projectile.muzzle : transform;
+        LaunchProjectile(projectile.prefab, muzzle, projectile.speed, projectile.lifetime, projectile.homing, projectile.turnSpeed);
     }
 
     void AnnounceAttack()

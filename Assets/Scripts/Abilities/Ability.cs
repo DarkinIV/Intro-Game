@@ -1,5 +1,4 @@
 // AI use: Claude rewrote the held ability (meter)
-// Owner: (add name)
 
 using UnityEngine;
 

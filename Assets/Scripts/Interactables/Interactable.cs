@@ -6,7 +6,7 @@ public class Interactable : MonoBehaviour
     [SerializeField] string interactionPrompt = "Interact";
 
     public float radius = 2f;
-    public Transform interactionTransform;   // optional, uses this object's position if empty
+    public Transform interactionTransform; // optional, uses this object's position if empty
 
     public string InteractionPrompt => interactionPrompt;
     public Vector3 InteractionPosition => interactionTransform != null ? interactionTransform.position : transform.position;

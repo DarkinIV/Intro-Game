@@ -142,8 +142,9 @@ MonoBehaviour:
   wallLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  lockOnRange: 12
-  lockLossRange: 24
+  drinkTime: 2
+  lockOnRange: 25
+  lockLossRange: 30
   foresightRange: 15
   warningTime: 0.45
   strikeDistance: 1.2
@@ -170,12 +171,15 @@ MonoBehaviour:
     baseValue: 0
   magic:
     baseValue: 0
-  attackRate: 1
   moveSpeedBase: 5
-  turnSpeed:
-    baseValue: 20
+  turnSpeed: 20
+  maxPoise:
+    baseValue: 25
+  poiseResetTime: 3
+  staggerTime: 0.5
   maxHealthPotions: 3
   startingHealthPotions: 3
+  potionHealAmount: 40
   startingLevel: 1
   levelsLostOnDeath: 1
   karmaLostOnDeath: 0.5
@@ -184,6 +188,7 @@ MonoBehaviour:
   attackInsanityIncreaseAmount: 1
   damagedInsanityIncreaseAmount: 2
   baseIFrameDuration: 0.3
+  attackRate: 1
   selectedCharacter: {fileID: 11400000, guid: dff9a6248040dd943983cf576291d589, type: 2}
 --- !u!114 &114658985731270352
 MonoBehaviour:
@@ -307,7 +312,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f53c138559ddad4091eb854092f98b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseDamage: 10
   Target: {fileID: 0}
   fatedKillMana: 30
   fateMarkParticles: {fileID: 4736529215302348539, guid: 79858272b2674ca181f2c59b90572ae7, type: 3}
@@ -801,10 +805,6 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0.0431429
       objectReference: {fileID: 0}
-    - target: {fileID: -7737895620608968216, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: -7239507436085175931, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.00012225527
@@ -1169,10 +1169,6 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: 0.045825265
       objectReference: {fileID: 0}
-    - target: {fileID: -3175432812086099044, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: -2775780279637204325, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1288,10 +1284,6 @@ PrefabInstance:
     - target: {fileID: -774485609497688880, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
       propertyPath: m_LocalRotation.z
       value: 0.0018681881
-      objectReference: {fileID: 0}
-    - target: {fileID: -688135293129391626, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -574607911634951530, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1577,10 +1569,6 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: 0.25865164
       objectReference: {fileID: 0}
-    - target: {fileID: 2608085118796703473, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 2838391200542782613, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.00000004202545
@@ -1745,10 +1733,6 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: 0.07162313
       objectReference: {fileID: 0}
-    - target: {fileID: 5767453233486347076, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 6060806385407736488, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.03189971
@@ -1833,10 +1817,6 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: 0.01091431
       objectReference: {fileID: 0}
-    - target: {fileID: 6394715735338059392, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 6552740704638146547, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.012181012
@@ -1864,10 +1844,6 @@ PrefabInstance:
     - target: {fileID: 6552740704638146547, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
       propertyPath: m_LocalRotation.z
       value: -0.005105138
-      objectReference: {fileID: 0}
-    - target: {fileID: 6564650744970094113, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6689410216127065466, guid: 4abd7c187275bdb4a9c4cb7969dcf9a8, type: 3}
       propertyPath: m_LocalPosition.x

@@ -19,7 +19,6 @@ MonoBehaviour:
   isStackable: 0
   maxStack: 1
   equipSlot: 0
-  damageModifier: 0
   weaponPrefab: {fileID: 5200000000000000001, guid: cc2a47afacd34d5bbdd64568a7f9a6a8, type: 3}
   attackKind: 1
   attackStaminaCost: 22
@@ -29,7 +28,7 @@ MonoBehaviour:
   projectilePrefab: {fileID: 7638945631581436254, guid: 3a84fd2a827d3aa44a265f0cb7e76dd6, type: 3}
   projectileMode: 1
   projectileSpeed: 7
-  projectileLifetime: 15
-  projectileTurnSpeed: 45
+  projectileLifetime: 7
+  projectileTurnSpeed: 90
   maxStaminaModifier: 0
   moveSpeedModifier: 0

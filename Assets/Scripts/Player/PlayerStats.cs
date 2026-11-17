@@ -30,8 +30,12 @@ public class PlayerStats : CharacterStats
     [Tooltip("Seconds of invulnerability at the start of every dash. The same for every character")]
     [SerializeField] float baseIFrameDuration = 0.3f;
 
+    [Header("Combat")]
+    public float attackRate = 1f;   // attacks per second, set from the Attack Speed rank
+
     [Header("Selected Character")]
-    public CharacterData selectedCharacter;
+    [Tooltip("Only used when testing a scene on its own. Normally the one picked on the selection screen is used")]
+    [SerializeField] CharacterData selectedCharacter;
 
     public int CurrentHealthPotions { get; private set; }
     public int MaxHealthPotions => maxHealthPotions;
@@ -45,7 +49,6 @@ public class PlayerStats : CharacterStats
     public int AirJumps => selectedCharacter.Agility.AirJumps();
     public float JumpHeightMultiplier => selectedCharacter.Agility.JumpHeightMultiplier();
     public float WallTimeMultiplier => selectedCharacter.Agility.WallTimeMultiplier();
-    public float TraversalStaminaMultiplier => selectedCharacter.Agility.TraversalStaminaMultiplier();
 
     public IReadOnlyList<Ability> Abilities => abilities;
     public UltimateAbility Ultimate { get; private set; }
@@ -131,7 +134,7 @@ public class PlayerStats : CharacterStats
         }
     }
 
-    public override float GetAttackSpeed() => base.GetAttackSpeed() + attackRateModifier;
+    public float GetAttackSpeed() => attackRate + attackRateModifier;
 
     // For upgrades and items, in seconds (negative makes the window shorter)
     public void AddIFrameTime(float seconds) => iFrameBonus += seconds;
@@ -234,22 +237,23 @@ public class PlayerStats : CharacterStats
         OnKarmaChanged?.Invoke(Karma);
     }
 
-    // Insanity
+    // Insanity is a percentage, so it stays between 0 and 100
+
     public void IncreaseInsanity(float amount)
     {
-        if (amount <= 0)
-            return;
-
-        CurrentInsanity += amount;
-        OnInsanityChanged?.Invoke(CurrentInsanity);
-
+        if (amount > 0)
+            SetInsanity(CurrentInsanity + amount);
     }
+
     public void DecreaseInsanity(float amount)
     {
-        if (amount <= 0)
-            return;
+        if (amount > 0)
+            SetInsanity(CurrentInsanity - amount);
+    }
 
-        CurrentInsanity -= amount;
+    void SetInsanity(float value)
+    {
+        CurrentInsanity = Mathf.Clamp(value, 0f, 100f);
         OnInsanityChanged?.Invoke(CurrentInsanity);
     }
 
@@ -266,14 +270,9 @@ public class PlayerStats : CharacterStats
 
     // Equipment
 
+    // A weapon's Bonus Damage is added in PlayerCombat, so only these stats change here
     void OnEquipmentChanged(Equipment newItem, Equipment oldItem)
     {
-        if (oldItem != null)
-            strength.RemoveModifier(oldItem.damageModifier);
-
-        if (newItem != null)
-            strength.AddModifier(newItem.damageModifier);
-
         if (oldItem is WeaponItem oldWeapon)
         {
             attackRateModifier -= oldWeapon.attackRateModifier;

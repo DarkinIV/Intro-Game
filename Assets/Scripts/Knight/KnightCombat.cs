@@ -5,6 +5,9 @@ using UnityEngine;
 // and the spin animation has a SpinHit event for when the damage happens.
 public class KnightCombat : PlayerCombat, IDamageInterceptor
 {
+    static readonly int BlockingParam = Animator.StringToHash("Blocking");
+    static readonly int SpinTrigger = Animator.StringToHash("Spin");
+
     [Header("Shield")]
     [SerializeField] Collider shieldCollider;
     [Range(0f, 1f)]
@@ -12,7 +15,7 @@ public class KnightCombat : PlayerCombat, IDamageInterceptor
     [SerializeField] float blockStaminaCost = 20f;   // per blocked hit (parries are free)
 
     [Header("Parry")]
-    [SerializeField] float staggerTime = 1.2f;       // how long a parried enemy is stunned
+    [SerializeField] float parryStunTime = 1.2f;     // how long a parried enemy is stunned
     [SerializeField] float riposteMultiplier = 2f;   // extra damage on the next hit = strength * this
     [SerializeField] float riposteWindow = 2f;
 
@@ -54,7 +57,7 @@ public class KnightCombat : PlayerCombat, IDamageInterceptor
     public void SetBlocking(bool blocking)
     {
         IsBlocking = blocking;
-        animator.SetBool("Blocking", blocking);
+        animator.SetBool(BlockingParam, blocking);
         playerStats.StaminaRegenPaused = blocking;
 
         // Always drop the shield when letting go, even if the animation got cut off
@@ -107,7 +110,7 @@ public class KnightCombat : PlayerCombat, IDamageInterceptor
 
         EnemyController enemy = attacker.GetComponent<EnemyController>();
         if (enemy != null)
-            enemy.Stun(staggerTime);
+            enemy.Stun(parryStunTime);
 
         if (parryParticles != null)
             Destroy(Instantiate(parryParticles, shieldCollider.transform.position, Quaternion.identity), 2f);
@@ -127,7 +130,7 @@ public class KnightCombat : PlayerCombat, IDamageInterceptor
     public void Spin(SpinAttackData data)
     {
         spin = data;
-        animator.SetTrigger("Spin");
+        animator.SetTrigger(SpinTrigger);
     }
 
     // Animation event on the spin animation

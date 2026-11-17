@@ -140,8 +140,9 @@ MonoBehaviour:
   wallLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  lockOnRange: 12
-  lockLossRange: 24
+  drinkTime: 2
+  lockOnRange: 25
+  lockLossRange: 30
 --- !u!114 &114536092619247222
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -162,12 +163,15 @@ MonoBehaviour:
     baseValue: 0
   magic:
     baseValue: 0
-  attackRate: 1
   moveSpeedBase: 5
-  turnSpeed:
-    baseValue: 20
+  turnSpeed: 20
+  maxPoise:
+    baseValue: 40
+  poiseResetTime: 3
+  staggerTime: 0.5
   maxHealthPotions: 3
   startingHealthPotions: 3
+  potionHealAmount: 40
   startingLevel: 1
   levelsLostOnDeath: 1
   karmaLostOnDeath: 0.5
@@ -176,6 +180,7 @@ MonoBehaviour:
   attackInsanityIncreaseAmount: 1
   damagedInsanityIncreaseAmount: 2
   baseIFrameDuration: 0.3
+  attackRate: 1
   selectedCharacter: {fileID: 11400000, guid: c562244506643784c9e5b3cd80fbef25, type: 2}
 --- !u!114 &114658985731270352
 MonoBehaviour:
@@ -226,12 +231,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11f3675160ca4f5ab33b89e5c0226a54, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseDamage: 14
   Target: {fileID: 0}
   shieldCollider: {fileID: 7835701980331249557}
   damageNegation: 0.7
   blockStaminaCost: 20
-  staggerTime: 1.2
+  parryStunTime: 1.2
   riposteMultiplier: 1
   riposteWindow: 2
   parryParticles: {fileID: 7232600405965926839, guid: 906b466877a549ad8bab2ae3c684e9cd, type: 3}
@@ -1035,10 +1039,6 @@ PrefabInstance:
     - target: {fileID: -1510922522818548503, guid: 7690561d06e61d240b730b38fb6bb896, type: 3}
       propertyPath: m_LocalRotation.z
       value: -0.1502787
-      objectReference: {fileID: 0}
-    - target: {fileID: -920627252963556356, guid: 7690561d06e61d240b730b38fb6bb896, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -920627252963556356, guid: 7690561d06e61d240b730b38fb6bb896, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'

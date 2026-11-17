@@ -20,7 +20,6 @@ MonoBehaviour:
   isStackable: 0
   maxStack: 1
   equipSlot: 0
-  damageModifier: 0
   weaponPrefab: {fileID: 3969241039888509039, guid: 0aa1efbae700aef42aafaf1c7512b71e, type: 3}
   attackKind: 0
   comboLength: 3

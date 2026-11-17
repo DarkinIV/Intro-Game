@@ -2,7 +2,7 @@ public enum StatRank { D, C, B, A, S }
 
 public static class StatRankExtensions
 {
-    // Starting stats at level 1
+    #region Starting stats at level 1
     public static int StartVitality(this StatRank r) => r switch
     {
         StatRank.S => 140,
@@ -51,8 +51,9 @@ public static class StatRankExtensions
         StatRank.C => 5f,
         _         => 4f
     };
+    #endregion
 
-    // How much each stat goes up every level
+    #region How much each stat goes up every level
     public static int LevelVitality(this StatRank r) => r switch
     {
         StatRank.S => 12,
@@ -101,6 +102,7 @@ public static class StatRankExtensions
         StatRank.C => 0,
         _         => 0
     };
+    #endregion
 
     // Agility, for jumping and wall moves. These don't change with level.
     public static int AirJumps(this StatRank r) => r switch
@@ -122,14 +124,5 @@ public static class StatRankExtensions
         StatRank.B => 1f,
         StatRank.C => 0.85f,
         _         => 0.7f
-    };
-    // Lower is better here, it multiplies the stamina cost of wall moves and slides
-    public static float TraversalStaminaMultiplier(this StatRank r) => r switch
-    {
-        StatRank.S => 0.5f,
-        StatRank.A => 0.7f,
-        StatRank.B => 1f,
-        StatRank.C => 1.2f,
-        _         => 1.4f
     };
 }

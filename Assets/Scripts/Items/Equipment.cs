@@ -5,7 +5,6 @@ using UnityEngine;
 public class Equipment : Item
 {
     public EquipmentSlot equipSlot = EquipmentSlot.Weapon;
-    public int damageModifier;
 
     public override void Use()
     {

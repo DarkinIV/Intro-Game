@@ -15,22 +15,20 @@ public class CharacterCombat : MonoBehaviour
     // How long the animator gets to actually start the attack after it's pressed
     const float AttackStartGrace = 0.3f;
     static readonly int AttackTrigger = Animator.StringToHash("Attack");
-
-    [Header("Combat")]
-    [SerializeField] protected int baseDamage = 10;
+    protected static readonly int AttackSpeedParam = Animator.StringToHash("AttackSpeed");
 
     public Transform Target;
 
     protected CharacterStats stats;
     protected Animator animator;
 
-    int activeAttackStates;   // can be 2 for a moment while blending into the next combo hit
-    float pendingUntil;       // attack pressed but the animator hasn't started it yet
+    int activeAttackStates; // can be 2 for a moment while blending into the next combo hit
+    float pendingUntil; // attack pressed but the animator hasn't started it yet
     bool canCombo;
     bool queued;
-    bool interrupted;         // ignore events from an attack that got cancelled
-    bool committed;           // the hit has happened
-    bool recovered;           // the hit is over so we can move again
+    bool interrupted; // ignore events from an attack that got cancelled
+    bool committed; // the hit has happened
+    bool recovered; // the hit is over so we can move again
 
     bool Busy => activeAttackStates > 0 || Time.time < pendingUntil;
 
@@ -43,8 +41,8 @@ public class CharacterCombat : MonoBehaviour
     public bool IsCommitted => committed && !recovered;
     public float MoveMultiplier => IsMovementLocked ? AttackMoveMultiplier : 1f;
 
-    public event System.Action OnAttack;    // attack was pressed
-    public event System.Action OnStrike;    // the hitbox opened or the projectile was fired
+    public event System.Action OnAttack; // attack was pressed
+    public event System.Action OnStrike; // the hitbox opened or the projectile was fired
     public event System.Action<CharacterStats> OnHit;
 
     static readonly List<Hitbox> noHitboxes = new List<Hitbox>();
@@ -124,7 +122,6 @@ public class CharacterCombat : MonoBehaviour
     }
 
     // Called by AttackStateBehaviour
-
     public void AttackStateEntered()
     {
         activeAttackStates++;
@@ -186,7 +183,6 @@ public class CharacterCombat : MonoBehaviour
     }
 
     // The event's text box is optional. Leave it empty to open every hitbox, or type a part
-    // name (like LeftClaw) when an enemy attack hits with different body parts at different times.
     public void OpenHitbox(string part)
     {
         if (interrupted)
@@ -256,7 +252,7 @@ public class CharacterCombat : MonoBehaviour
     protected virtual void Shoot() { }
     protected virtual bool CanAttack() => true;
     protected virtual bool ConsumeAttackCost() => true;
-    protected virtual int GetAttackDamage() => baseDamage;
+    protected virtual int GetAttackDamage() => stats.strength.Value;
     protected virtual DamageType AttackDamageType => DamageType.Physical;
     protected virtual void OnSuccessfulHit(CharacterStats target, int damageDealt) { }
 

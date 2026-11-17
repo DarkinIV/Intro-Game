@@ -26,7 +26,7 @@ public class PlayerCombat : CharacterCombat
 
     protected virtual void Update()
     {
-        animator.SetFloat("AttackSpeed", playerStats.GetAttackSpeed());
+        animator.SetFloat(AttackSpeedParam, playerStats.GetAttackSpeed());
     }
 
     // Weapon stats
@@ -66,11 +66,6 @@ public class PlayerCombat : CharacterCombat
     protected override bool ConsumeAttackCost()
     {
         return playerStats.TrySpendStamina(AttackStaminaCost);
-    }
-
-    protected override int GetAttackDamage()
-    {
-        return playerStats.strength.Value;
     }
 
     // Damage we deal charges the ultimate

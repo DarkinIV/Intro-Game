@@ -201,6 +201,17 @@ public class UIManager : MonoBehaviour
         Time.timeScale = 0f;
     }
 
+    public void ShowTutorial(TutorialData tutorial)
+    {
+        // Tutorials for one character are skipped for the others
+        if (tutorial.onlyFor != null && tutorial.onlyFor != playerStats.Character)
+            return;
+
+        tutorialSlotPrefab.Setup(tutorial);
+        tutorialSlotPrefab.gameObject.SetActive(true);
+        Time.timeScale = 0f;
+    }
+
     public void HideTutorial()
     {
         tutorialSlotPrefab.gameObject.SetActive(false);

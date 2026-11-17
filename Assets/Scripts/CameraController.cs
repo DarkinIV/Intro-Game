@@ -123,7 +123,6 @@ public class CameraController : MonoBehaviour
         // When locked on point the camera at the enemy
         if (locked)
         {
-            // lockOnTarget should be the enemy's LockOnPoint
             Vector3 toEnemy = lockOnTarget.position - currentPivot;
             Vector3 flatDirection = new Vector3(toEnemy.x, 0f, toEnemy.z);
 

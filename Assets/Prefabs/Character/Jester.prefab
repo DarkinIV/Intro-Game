@@ -140,8 +140,9 @@ MonoBehaviour:
   wallLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  lockOnRange: 12
-  lockLossRange: 24
+  drinkTime: 2
+  lockOnRange: 25
+  lockLossRange: 30
   perfectDodgeCharge: 60
   slamSpeed: 28
   slamRecovery: 0.3
@@ -167,12 +168,15 @@ MonoBehaviour:
     baseValue: 0
   magic:
     baseValue: 0
-  attackRate: 1
   moveSpeedBase: 5
-  turnSpeed:
+  turnSpeed: 20
+  maxPoise:
     baseValue: 20
+  poiseResetTime: 3
+  staggerTime: 0.5
   maxHealthPotions: 3
   startingHealthPotions: 3
+  potionHealAmount: 40
   startingLevel: 1
   levelsLostOnDeath: 1
   karmaLostOnDeath: 0.5
@@ -181,6 +185,7 @@ MonoBehaviour:
   attackInsanityIncreaseAmount: 1
   damagedInsanityIncreaseAmount: 2
   baseIFrameDuration: 0.3
+  attackRate: 1
   selectedCharacter: {fileID: 11400000, guid: 2ff890a3b4877a54c9850f11fbf24082, type: 2}
 --- !u!114 &114658985731270352
 MonoBehaviour:
@@ -231,7 +236,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a28433fd1b8b482b849021d85c28d858, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseDamage: 10
   Target: {fileID: 0}
   slamDamageMultiplier: 2.5
   slamRadius: 3.5
@@ -503,25 +507,13 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -3175432812086099044, guid: e762e73ada3c228408d52df92436c803, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -3175432812086099044, guid: e762e73ada3c228408d52df92436c803, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 6bfcdf0265e5e26488407c02f6ed4764, type: 2}
     - target: {fileID: -1613345622734479886, guid: e762e73ada3c228408d52df92436c803, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -1613345622734479886, guid: e762e73ada3c228408d52df92436c803, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: d9cc2b6515ad12548a7898c773a3a9e9, type: 2}
-    - target: {fileID: -220761046684244959, guid: e762e73ada3c228408d52df92436c803, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: -220761046684244959, guid: e762e73ada3c228408d52df92436c803, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -539,10 +531,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: 8803178754e01d946ba6766b8f55cea4, type: 2}
     - target: {fileID: 2608085118796703473, guid: e762e73ada3c228408d52df92436c803, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2608085118796703473, guid: e762e73ada3c228408d52df92436c803, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 8803178754e01d946ba6766b8f55cea4, type: 2}
@@ -551,17 +539,9 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4322740433288995510, guid: e762e73ada3c228408d52df92436c803, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4322740433288995510, guid: e762e73ada3c228408d52df92436c803, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: e94476875b1b85b42818156a93515f51, type: 2}
-    - target: {fileID: 6564650744970094113, guid: e762e73ada3c228408d52df92436c803, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 6564650744970094113, guid: e762e73ada3c228408d52df92436c803, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 

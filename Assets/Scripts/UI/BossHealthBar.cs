@@ -9,7 +9,7 @@ public class BossHealthBar : MonoBehaviour
 
     [SerializeField] GameObject panel;     // everything below sits under this, it's switched on and off
     [SerializeField] TMP_Text nameText;
-    [SerializeField] ResourceBar bar;      // set its Pixels Per Point to 0 so it keeps its width
+    [SerializeField] ResourceBar bar;
 
     CharacterStats boss;
 

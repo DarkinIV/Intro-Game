@@ -1,5 +1,4 @@
 // AI use: Claude rewrote Add (stacking, returns how many fit)
-// Owner: (add name)
 
 using System.Collections.Generic;
 using UnityEngine;

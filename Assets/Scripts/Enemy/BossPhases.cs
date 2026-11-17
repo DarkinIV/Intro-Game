@@ -1,9 +1,10 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 // Turns an enemy into a boss. Goes next to its EnemyController.
 // The fight is split into phases. Each one starts when the boss's health drops to a set percent and can
-// give it new attacks, make it faster, switch on hazards (fire rain, lava...) and play an animation (a roar).
+// give it new attacks, make it faster, switch on hazards (fire rain, lava...), play an animation (a roar) and heal.
 // The first phase starts when the boss first sees the player, so its animation is the boss's intro.
 // It also shows the boss health bar at the bottom of the screen while the fight is on.
 // Remember to tick Is Boss and untick Waits For Turn on the EnemyController.
@@ -30,6 +31,8 @@ public class BossPhases : MonoBehaviour
         public float extraMoveSpeed = 0f;
         [Tooltip("Only works if the attack state in the animator uses AttackSpeed as its speed multiplier")]
         public float attackSpeed = 1f;
+        [Tooltip("Heals this percent of its max health while the phase animation plays. Stunning it (parry, whip pull) stops the heal")]
+        [Range(0f, 100f)] public float healPercent = 0f;
 
         [Tooltip("Switched on while this phase is going (fire rain, lava, particles...)")]
         public GameObject[] hazards = new GameObject[0];
@@ -40,7 +43,7 @@ public class BossPhases : MonoBehaviour
 
     EnemyController controller;
     CharacterStats stats;
-    Animator animator;
+    EnemyCombat combat;
 
     int currentPhase = -1; // -1 until the fight starts
     float speedBonus;
@@ -49,7 +52,7 @@ public class BossPhases : MonoBehaviour
     {
         controller = GetComponent<EnemyController>();
         stats = GetComponent<CharacterStats>();
-        animator = GetComponent<Animator>();
+        combat = GetComponent<EnemyCombat>();
     }
 
     void OnEnable()
@@ -129,12 +132,32 @@ public class BossPhases : MonoBehaviour
         speedBonus = phase.extraMoveSpeed;
         stats.AddPacePercent(speedBonus);
 
-        animator.SetFloat("AttackSpeed", phase.attackSpeed);
+        // Multiplies each attack's own animation speed
+        combat.attackSpeedMultiplier = phase.attackSpeed;
 
         SetHazards(phase, true);
 
-        if (phase.animationTrigger != "")
+        if (!string.IsNullOrEmpty(phase.animationTrigger))
             controller.PlayAnimation(phase.animationTrigger, phase.animationTime);
+
+        if (phase.healPercent > 0f)
+            StartCoroutine(Heal(phase));
+    }
+
+    // Heals a little every frame while the phase animation plays. The player can still hit it
+    // to undo the heal, and stunning it ends the animation and the heal with it.
+    IEnumerator Heal(Phase phase)
+    {
+        int total = Mathf.RoundToInt(stats.maxHealth.Value * phase.healPercent / 100f);
+        int healed = 0;
+
+        for (float time = 0f; time < phase.animationTime && controller.currentState == EnemyController.State.Busy; time += Time.deltaTime)
+        {
+            int shouldHaveHealed = Mathf.RoundToInt(total * time / phase.animationTime);
+            stats.Heal(shouldHaveHealed - healed);
+            healed = shouldHaveHealed;
+            yield return null;
+        }
     }
 
     void SetHazards(Phase phase, bool on)
